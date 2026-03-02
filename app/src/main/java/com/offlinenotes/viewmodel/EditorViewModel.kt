@@ -59,26 +59,13 @@ class EditorViewModel(
         _uiState.update {
             it.copy(
                 text = value,
-                checklistLines = extractChecklistLines(value)
+                checklistLines = ChecklistTextTransformer.extractChecklistLines(value)
             )
         }
     }
 
     fun toggleChecklistLine(lineIndex: Int) {
-        val lines = _uiState.value.text.split("\n").toMutableList()
-        if (lineIndex !in lines.indices) {
-            return
-        }
-
-        val current = lines[lineIndex]
-        val toggled = when {
-            current.startsWith("- [ ]") -> current.replaceFirst("- [ ]", "- [x]")
-            current.startsWith("- [x]") -> current.replaceFirst("- [x]", "- [ ]")
-            current.startsWith("- [X]") -> current.replaceFirst("- [X]", "- [ ]")
-            else -> current
-        }
-        lines[lineIndex] = toggled
-        onTextChanged(lines.joinToString("\n"))
+        onTextChanged(ChecklistTextTransformer.toggleLine(_uiState.value.text, lineIndex))
     }
 
     fun save(showFeedback: Boolean = true) {
@@ -109,7 +96,7 @@ class EditorViewModel(
                         it.copy(
                             text = content,
                             isLoading = false,
-                            checklistLines = extractChecklistLines(content)
+                            checklistLines = ChecklistTextTransformer.extractChecklistLines(content)
                         )
                     }
                 }
@@ -117,17 +104,6 @@ class EditorViewModel(
                     _uiState.update { it.copy(isLoading = false) }
                     _events.emit(EditorEvent.ShowMessage(it.message ?: "Erro ao abrir nota"))
                 }
-        }
-    }
-
-    private fun extractChecklistLines(text: String): List<ChecklistLine> {
-        return text.lines().mapIndexedNotNull { index, line ->
-            when {
-                line.startsWith("- [ ]") -> ChecklistLine(index = index, checked = false, text = line.removePrefix("- [ ]").trim())
-                line.startsWith("- [x]") -> ChecklistLine(index = index, checked = true, text = line.removePrefix("- [x]").trim())
-                line.startsWith("- [X]") -> ChecklistLine(index = index, checked = true, text = line.removePrefix("- [X]").trim())
-                else -> null
-            }
         }
     }
 

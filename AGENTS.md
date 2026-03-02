@@ -7,6 +7,7 @@ Repository guide for agentic coding tools working on OfflineNotes.
 - Storage: SAF only (`ACTION_OPEN_DOCUMENT_TREE` + persistable URI permission).
 - Networking: do not add network/sync APIs inside the app.
 - Bottom bar has exactly 2 tabs: `Notas` and `Sync`.
+- Git safety: never run `git push` unless the user explicitly asks for push in this chat.
 - Before finalizing: run lint/test/build commands listed below.
 
 ## 1) Product Constraints (non-negotiable)

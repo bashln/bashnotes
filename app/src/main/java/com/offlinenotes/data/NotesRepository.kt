@@ -27,7 +27,7 @@ class NotesRepository(private val context: Context) {
                     walk(child, nextPrefix)
                 } else if (child.isFile) {
                     val fileName = child.name.orEmpty()
-                    if (!isNoteFile(fileName)) {
+                    if (!NoteFileNaming.isNoteFile(fileName)) {
                         return@forEach
                     }
                     if (normalizedQuery.isNotBlank() && !fileName.lowercase().contains(normalizedQuery)) {
@@ -58,7 +58,7 @@ class NotesRepository(private val context: Context) {
             val root = DocumentFile.fromTreeUri(context, rootUri)
                 ?: throw IOException("Pasta raiz invalida")
 
-            val fileName = ensureExtension(name.trim(), kind)
+            val fileName = NoteFileNaming.ensureExtension(name.trim(), kind)
             if (root.findFile(fileName) != null) {
                 throw IOException("Ja existe um arquivo com esse nome")
             }
@@ -92,8 +92,8 @@ class NotesRepository(private val context: Context) {
                 ?: throw IOException("Arquivo nao encontrado")
 
             val currentName = file.name.orEmpty()
-            val targetName = normalizeRename(currentName, newName)
-            if (!isNoteFile(targetName)) {
+            val targetName = NoteFileNaming.normalizeRename(currentName, newName)
+            if (!NoteFileNaming.isNoteFile(targetName)) {
                 throw IOException("Extensao invalida. Use .md ou .org")
             }
 
@@ -113,35 +113,4 @@ class NotesRepository(private val context: Context) {
         }
     }
 
-    private fun ensureExtension(name: String, kind: NoteKind): String {
-        val base = name.ifBlank { defaultName() }
-        return when (kind) {
-            NoteKind.MARKDOWN_NOTE,
-            NoteKind.MARKDOWN_TASKS -> if (base.endsWith(".md")) base else "$base.md"
-            NoteKind.ORG_NOTE -> if (base.endsWith(".org")) base else "$base.org"
-        }
-    }
-
-    private fun normalizeRename(currentName: String, newName: String): String {
-        val trimmed = newName.trim()
-        if (trimmed.isBlank()) {
-            throw IOException("Nome invalido")
-        }
-        if (trimmed.endsWith(".md") || trimmed.endsWith(".org")) {
-            return trimmed
-        }
-
-        val currentExt = when {
-            currentName.endsWith(".org") -> ".org"
-            else -> ".md"
-        }
-        return "$trimmed$currentExt"
-    }
-
-    private fun isNoteFile(fileName: String): Boolean {
-        val lower = fileName.lowercase()
-        return lower.endsWith(".md") || lower.endsWith(".org")
-    }
-
-    private fun defaultName(): String = "nota"
 }
