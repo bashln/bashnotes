@@ -6,16 +6,11 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,14 +19,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -74,68 +66,13 @@ fun OfflineNotesApp() {
             is NotesListEvent.ShowMessage -> Unit
         }
     }
-
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = navBackStackEntry?.destination
-    val currentRoute = currentDestination?.route
-
+    val currentRoute = navBackStackEntry?.destination?.route
     val showFab = currentRoute == Routes.NOTES && notesState.rootUri != null
-    val showBottomBar = currentRoute == Routes.NOTES || currentRoute == Routes.SYNC
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = androidx.compose.material3.MaterialTheme.colorScheme.background,
-        bottomBar = {
-            if (showBottomBar) {
-                NavigationBar(
-                    containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
-                    tonalElevation = 2.dp
-                ) {
-                    NavigationBarItem(
-                        selected = currentDestination?.hierarchy?.any { it.route == Routes.NOTES } == true,
-                        onClick = {
-                            navController.navigate(Routes.NOTES) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(Icons.Default.Description, contentDescription = "Notas") },
-                        label = { Text("Notas") },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                            selectedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                            indicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
-                            unselectedIconColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
-                    NavigationBarItem(
-                        selected = currentDestination?.hierarchy?.any { it.route == Routes.SYNC } == true,
-                        onClick = {
-                            navController.navigate(Routes.SYNC) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(Icons.Default.Cloud, contentDescription = "Sync") },
-                        label = { Text("Sync") },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                            selectedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                            indicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
-                            unselectedIconColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    )
-                }
-            }
-        },
         floatingActionButton = {
             if (showFab) {
                 androidx.compose.foundation.layout.Box {
@@ -189,6 +126,7 @@ fun OfflineNotesApp() {
                 NotesListScreen(
                     paddingValues = padding,
                     viewModel = notesViewModel,
+                    onFolderSelected = notesViewModel::onFolderSelected,
                     onOpenSyncHelp = {
                         navController.navigate(Routes.SYNC) {
                             launchSingleTop = true
@@ -208,6 +146,7 @@ fun OfflineNotesApp() {
                 EditorScreen(
                     paddingValues = padding,
                     noteUri = uri,
+                    onFolderSelected = notesViewModel::onFolderSelected,
                     onBack = { navController.popBackStack() }
                 )
             }

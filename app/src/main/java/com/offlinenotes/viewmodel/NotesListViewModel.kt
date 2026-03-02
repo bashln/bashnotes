@@ -64,6 +64,9 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
                         android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 getApplication<Application>().contentResolver.takePersistableUriPermission(uri, flags)
                 settingsRepository.saveRootUri(uri)
+                allNotesCache = emptyList()
+                _uiState.update { it.copy(rootUri = uri) }
+                refreshNotes(forceReload = true)
             }.onFailure { error ->
                 _events.emit(
                     NotesListEvent.ShowMessage(
@@ -219,7 +222,7 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun isPermissionError(error: Throwable): Boolean {
         val message = error.message.orEmpty().lowercase()
-        return message.contains("permission") || error is SecurityException
+        return message.contains("permission") || message.contains("permissao") || error is SecurityException
     }
 
     private fun clearFolderSelectionWithMessage(message: String) {

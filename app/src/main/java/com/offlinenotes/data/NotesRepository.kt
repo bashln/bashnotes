@@ -70,11 +70,18 @@ class NotesRepository(private val context: Context) {
                 candidate = "$base-${counter.toString().padStart(2, '0')}$extension"
             }
 
-            val mimeType = if (extension == ".org") "text/plain" else "text/markdown"
+            val mimeType = if (extension == ".org") "application/octet-stream" else "text/markdown"
             val file = root.createFile(mimeType, candidate)
                 ?: throw IOException("Nao foi possivel criar a nota")
 
-            file.uri
+            if (extension == ".org") {
+                val createdName = file.name.orEmpty()
+                if (createdName.endsWith(".txt") && createdName != candidate) {
+                    file.renameTo(candidate)
+                }
+            }
+
+            root.findFile(candidate)?.uri ?: file.uri
         }
     }
 

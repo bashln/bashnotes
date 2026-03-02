@@ -36,7 +36,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,21 +43,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.offlinenotes.data.SettingsRepository
 import com.offlinenotes.viewmodel.EditorEvent
 import com.offlinenotes.viewmodel.EditorViewModel
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditorScreen(
     paddingValues: PaddingValues,
     noteUri: Uri,
+    onFolderSelected: (Uri) -> Unit,
     onBack: () -> Unit
 ) {
     val app = LocalContext.current.applicationContext as Application
-    val settingsRepository = remember(app) { SettingsRepository(app) }
-    val scope = rememberCoroutineScope()
     val viewModel: EditorViewModel = viewModel(
         key = noteUri.toString(),
         factory = EditorViewModel.factory(app, noteUri)
@@ -75,16 +71,7 @@ fun EditorScreen(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
         if (uri != null) {
-            val flags =
-                android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                    android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            runCatching {
-                app.contentResolver.takePersistableUriPermission(uri, flags)
-            }
-            scope.launch {
-                settingsRepository.saveRootUri(uri)
-                snackbarHostState.showSnackbar("Pasta atualizada")
-            }
+            onFolderSelected(uri)
         }
     }
 
@@ -147,7 +134,7 @@ fun EditorScreen(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
+                    .padding(bottom = paddingValues.calculateBottomPadding())
                     .padding(scaffoldPadding),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
@@ -160,7 +147,7 @@ fun EditorScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(bottom = paddingValues.calculateBottomPadding())
                 .padding(scaffoldPadding)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)

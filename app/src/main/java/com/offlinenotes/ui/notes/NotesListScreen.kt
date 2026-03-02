@@ -63,6 +63,7 @@ import com.offlinenotes.viewmodel.NotesListViewModel
 fun NotesListScreen(
     paddingValues: PaddingValues,
     viewModel: NotesListViewModel,
+    onFolderSelected: (Uri) -> Unit,
     onOpenSyncHelp: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -76,7 +77,7 @@ fun NotesListScreen(
         contract = ActivityResultContracts.OpenDocumentTree()
     ) { uri: Uri? ->
         if (uri != null) {
-            viewModel.onFolderSelected(uri)
+            onFolderSelected(uri)
         }
     }
 
@@ -111,7 +112,10 @@ fun NotesListScreen(
                     }
                     DropdownMenu(
                         expanded = topMenuExpanded,
-                        onDismissRequest = { topMenuExpanded = false }
+                        onDismissRequest = { topMenuExpanded = false },
+                        containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
+                        shape = androidx.compose.material3.MaterialTheme.shapes.medium,
+                        tonalElevation = 2.dp
                     ) {
                         DropdownMenuItem(
                             text = { Text("Selecionar pasta") },
@@ -153,7 +157,7 @@ fun NotesListScreen(
             EmptyFolderState(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
+                    .padding(bottom = paddingValues.calculateBottomPadding())
                     .padding(scaffoldPadding),
                 onPickFolder = { folderLauncher.launch(null) }
             )
@@ -163,7 +167,7 @@ fun NotesListScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(bottom = paddingValues.calculateBottomPadding())
                 .padding(scaffoldPadding)
                 .padding(16.dp)
         ) {
