@@ -14,9 +14,8 @@ import kotlinx.coroutines.withContext
 class NotesRepository(private val context: Context) {
     private val quickNameFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm")
 
-    suspend fun listNotes(rootUri: Uri, query: String = ""): List<NoteMeta> = withContext(Dispatchers.IO) {
+    suspend fun listNotes(rootUri: Uri): List<NoteMeta> = withContext(Dispatchers.IO) {
         val root = DocumentFile.fromTreeUri(context, rootUri) ?: return@withContext emptyList()
-        val normalizedQuery = query.trim().lowercase()
         val notes = mutableListOf<NoteMeta>()
 
         fun walk(directory: DocumentFile, prefix: String) {
@@ -31,9 +30,6 @@ class NotesRepository(private val context: Context) {
                 } else if (child.isFile) {
                     val fileName = child.name.orEmpty()
                     if (!NoteFileNaming.isNoteFile(fileName)) {
-                        return@forEach
-                    }
-                    if (normalizedQuery.isNotBlank() && !fileName.lowercase().contains(normalizedQuery)) {
                         return@forEach
                     }
 
@@ -54,24 +50,6 @@ class NotesRepository(private val context: Context) {
             compareByDescending<NoteMeta> { it.lastModified ?: Long.MIN_VALUE }
                 .thenBy { it.name.lowercase() }
         )
-    }
-
-    suspend fun createNote(rootUri: Uri, name: String, kind: NoteKind): Result<Uri> = withContext(Dispatchers.IO) {
-        runCatching {
-            val root = DocumentFile.fromTreeUri(context, rootUri)
-                ?: throw IOException("Pasta raiz invalida")
-
-            val fileName = NoteFileNaming.ensureExtension(name.trim(), kind)
-            if (root.findFile(fileName) != null) {
-                throw IOException("Ja existe um arquivo com esse nome")
-            }
-
-            val mimeType = if (fileName.endsWith(".org")) "text/plain" else "text/markdown"
-            val file = root.createFile(mimeType, fileName)
-                ?: throw IOException("Nao foi possivel criar a nota")
-
-            file.uri
-        }
     }
 
     suspend fun createQuickNote(rootUri: Uri, kind: NoteKind): Result<Uri> = withContext(Dispatchers.IO) {

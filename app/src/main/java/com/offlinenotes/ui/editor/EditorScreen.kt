@@ -66,6 +66,7 @@ fun EditorScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showRenameDialog by remember { mutableStateOf(false) }
+    val currentExtension = if (uiState.title.endsWith(".org")) ".org" else ".md"
     var renameValue by remember(uiState.title) {
         mutableStateOf(uiState.title.removeSuffix(".md").removeSuffix(".org"))
     }
@@ -209,7 +210,8 @@ fun EditorScreen(
                     value = renameValue,
                     onValueChange = { renameValue = it },
                     singleLine = true,
-                    placeholder = { Text("nome-do-arquivo") }
+                    placeholder = { Text("nome-do-arquivo") },
+                    supportingText = { Text("Extensao fixa: $currentExtension") }
                 )
             },
             confirmButton = {

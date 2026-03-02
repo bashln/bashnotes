@@ -3,6 +3,7 @@ Repository guide for agentic coding tools working on OfflineNotes.
 
 ## 0) Quick Start
 - Stack: Kotlin + Jetpack Compose + Material 3 + Navigation Compose + DataStore.
+- Highest priority for this project: remain fully offline and as privacy-friendly as possible.
 - App model: fully offline notes app; `.md` and `.org` files are source of truth.
 - Storage: SAF only (`ACTION_OPEN_DOCUMENT_TREE` + persistable URI permission).
 - Networking: do not add network/sync APIs inside the app.
@@ -12,6 +13,7 @@ Repository guide for agentic coding tools working on OfflineNotes.
 
 ## 1) Product Constraints (non-negotiable)
 - OfflineNotes is not an IDE and not a second-brain platform.
+- Privacy-first rule: never add telemetry, analytics, remote logging, cloud APIs, or background data exfiltration.
 - Keep UX minimal: list -> open -> write -> save.
 - Do not implement: backlinks, graph, plugins, advanced markdown preview, attachments,
   database as source-of-truth, AI features, login, WebDAV, built-in sync.

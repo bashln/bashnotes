@@ -9,6 +9,8 @@ import com.offlinenotes.data.NotesRepository
 import com.offlinenotes.data.SettingsRepository
 import com.offlinenotes.domain.NoteKind
 import com.offlinenotes.domain.NoteMeta
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -23,8 +25,7 @@ data class NotesListUiState(
     val rootUri: Uri? = null,
     val isLoading: Boolean = true,
     val query: String = "",
-    val notes: List<NoteMeta> = emptyList(),
-    val errorMessage: String? = null
+    val notes: List<NoteMeta> = emptyList()
 )
 
 sealed interface NotesListEvent {
@@ -35,6 +36,8 @@ sealed interface NotesListEvent {
 class NotesListViewModel(application: Application) : AndroidViewModel(application) {
     private val settingsRepository = SettingsRepository(application)
     private val notesRepository = NotesRepository(application)
+    private var allNotesCache: List<NoteMeta> = emptyList()
+    private var searchJob: Job? = null
 
     private val _uiState = MutableStateFlow(NotesListUiState())
     val uiState: StateFlow<NotesListUiState> = _uiState.asStateFlow()
@@ -48,7 +51,7 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun onQueryChange(value: String) {
         _uiState.update { it.copy(query = value) }
-        refreshNotes()
+        scheduleFilter()
     }
 
     fun onFolderSelected(uri: Uri) {
@@ -62,28 +65,10 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
             }.onFailure { error ->
                 _events.emit(
                     NotesListEvent.ShowMessage(
-                        error.message ?: "Nao foi possivel salvar a pasta"
+                        mapStorageError(error, "Nao foi possivel salvar a pasta")
                     )
                 )
             }
-        }
-    }
-
-    fun createNote(name: String, kind: NoteKind) {
-        val rootUri = _uiState.value.rootUri ?: return
-        viewModelScope.launch {
-            notesRepository.createNote(rootUri, name, kind)
-                .onSuccess { createdUri ->
-                    if (kind == NoteKind.MARKDOWN_TASKS) {
-                        val content = "- [ ] Item 1\n- [ ] Item 2\n"
-                        notesRepository.writeNote(createdUri, content)
-                    }
-                    refreshNotes()
-                    _events.emit(NotesListEvent.OpenEditor(createdUri))
-                }
-                .onFailure {
-                    _events.emit(NotesListEvent.ShowMessage(it.message ?: "Falha ao criar nota"))
-                }
         }
     }
 
@@ -96,11 +81,11 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
                         val content = "- [ ] Item 1\n- [ ] Item 2\n"
                         notesRepository.writeNote(createdUri, content)
                     }
-                    refreshNotes()
+                    refreshNotes(forceReload = true)
                     _events.emit(NotesListEvent.OpenEditor(createdUri))
                 }
                 .onFailure {
-                    _events.emit(NotesListEvent.ShowMessage(it.message ?: "Falha ao criar nota"))
+                    _events.emit(NotesListEvent.ShowMessage(mapStorageError(it, "Falha ao criar nota")))
                 }
         }
     }
@@ -115,10 +100,10 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             notesRepository.renameNote(noteMeta.uri, newName.trim())
                 .onSuccess {
-                    refreshNotes()
+                    refreshNotes(forceReload = true)
                 }
                 .onFailure {
-                    _events.emit(NotesListEvent.ShowMessage(it.message ?: "Falha ao renomear"))
+                    _events.emit(NotesListEvent.ShowMessage(mapStorageError(it, "Falha ao renomear")))
                 }
         }
     }
@@ -127,58 +112,118 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             notesRepository.deleteNote(noteMeta.uri)
                 .onSuccess {
-                    refreshNotes()
+                    refreshNotes(forceReload = true)
                 }
                 .onFailure {
-                    _events.emit(NotesListEvent.ShowMessage(it.message ?: "Falha ao deletar"))
+                    _events.emit(NotesListEvent.ShowMessage(mapStorageError(it, "Falha ao deletar")))
                 }
         }
     }
 
-    fun refreshNotes() {
+    fun refreshNotes(forceReload: Boolean = false) {
         val rootUri = _uiState.value.rootUri ?: return
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-            runCatching {
-                notesRepository.listNotes(rootUri, _uiState.value.query)
-            }.onSuccess { list ->
-                _uiState.update { it.copy(notes = list, isLoading = false) }
-            }.onFailure { error ->
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Erro ao listar notas"
-                    )
+            if (forceReload || allNotesCache.isEmpty()) {
+                _uiState.update { it.copy(isLoading = true) }
+                runCatching {
+                    notesRepository.listNotes(rootUri)
+                }.onSuccess { list ->
+                    allNotesCache = list
+                    applyFilterNow()
+                }.onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false, notes = emptyList()) }
+                    if (isPermissionError(error)) {
+                        clearFolderSelectionWithMessage("Permissao da pasta expirada. Escolha novamente.")
+                    } else {
+                        _events.emit(NotesListEvent.ShowMessage(mapStorageError(error, "Erro ao acessar pasta")))
+                    }
                 }
-                _events.emit(NotesListEvent.ShowMessage(error.message ?: "Erro ao acessar pasta"))
+            } else {
+                applyFilterNow()
             }
         }
+    }
+
+    private fun scheduleFilter() {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(250)
+            applyFilterNow()
+        }
+    }
+
+    private fun applyFilterNow() {
+        val query = _uiState.value.query.trim().lowercase()
+        val filtered = if (query.isBlank()) {
+            allNotesCache
+        } else {
+            allNotesCache.filter { it.name.lowercase().contains(query) }
+        }
+        _uiState.update {
+            it.copy(
+                notes = filtered,
+                isLoading = false
+            )
+        }
+    }
+
+    private fun mapStorageError(error: Throwable, fallback: String): String {
+        val message = error.message.orEmpty().lowercase()
+        return when {
+            isPermissionError(error) -> {
+                "Sem permissao para acessar esta pasta. Escolha novamente."
+            }
+
+            message.contains("no such file") || message.contains("not found") -> {
+                "Pasta ou arquivo nao encontrado."
+            }
+
+            else -> error.message ?: fallback
+        }
+    }
+
+    private fun isPermissionError(error: Throwable): Boolean {
+        val message = error.message.orEmpty().lowercase()
+        return message.contains("permission") || error is SecurityException
+    }
+
+    private fun clearFolderSelectionWithMessage(message: String) {
+        viewModelScope.launch {
+            allNotesCache = emptyList()
+            settingsRepository.clearRootUri()
+            _uiState.update { it.copy(rootUri = null, isLoading = false, notes = emptyList(), query = "") }
+            _events.emit(NotesListEvent.ShowMessage(message))
+        }
+    }
+
+    private fun validateExistingFolderAccess(uri: Uri): Boolean {
+        return runCatching {
+            getApplication<Application>().contentResolver.persistedUriPermissions.any {
+                it.uri == uri && (it.isReadPermission || it.isWritePermission)
+            }
+        }.getOrDefault(false)
+    }
+
+    private fun onFolderAccessInvalid() {
+        clearFolderSelectionWithMessage("Permissao da pasta expirada. Escolha novamente.")
     }
 
     private fun observeRootFolder() {
         viewModelScope.launch {
             settingsRepository.rootUriFlow.collectLatest { uri ->
-                if (uri != null && !hasPersistedPermission(uri)) {
-                    settingsRepository.clearRootUri()
-                    _uiState.update { it.copy(rootUri = null, isLoading = false, notes = emptyList()) }
-                    _events.emit(NotesListEvent.ShowMessage("Permissao da pasta expirada. Escolha novamente."))
+                if (uri != null && !validateExistingFolderAccess(uri)) {
+                    onFolderAccessInvalid()
                     return@collectLatest
                 }
 
                 _uiState.update { it.copy(rootUri = uri) }
                 if (uri != null) {
-                    refreshNotes()
+                    refreshNotes(forceReload = true)
                 } else {
+                    allNotesCache = emptyList()
                     _uiState.update { it.copy(isLoading = false, notes = emptyList()) }
                 }
             }
-        }
-    }
-
-    private fun hasPersistedPermission(uri: Uri): Boolean {
-        val permissions = getApplication<Application>().contentResolver.persistedUriPermissions
-        return permissions.any {
-            it.uri == uri && (it.isReadPermission || it.isWritePermission)
         }
     }
 

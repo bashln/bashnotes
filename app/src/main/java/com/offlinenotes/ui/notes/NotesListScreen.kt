@@ -46,6 +46,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,6 +65,7 @@ fun NotesListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showFabHint by rememberSaveable { mutableStateOf(true) }
 
     var renameTarget by remember { mutableStateOf<NoteMeta?>(null) }
     var deleteTarget by remember { mutableStateOf<NoteMeta?>(null) }
@@ -126,6 +128,14 @@ fun NotesListScreen(
                 .padding(scaffoldPadding)
                 .padding(16.dp)
         ) {
+            val rootLabel = uiState.rootUri?.lastPathSegment?.substringAfterLast(':').orEmpty()
+            Text(
+                text = "Pasta ativa: ${if (rootLabel.isBlank()) "(desconhecida)" else rootLabel}",
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(Modifier.height(8.dp))
+
             OutlinedTextField(
                 value = uiState.query,
                 onValueChange = viewModel::onQueryChange,
@@ -143,6 +153,34 @@ fun NotesListScreen(
             )
 
             Spacer(Modifier.height(16.dp))
+
+            if (showFabHint) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface
+                    ),
+                    shape = androidx.compose.material3.MaterialTheme.shapes.medium
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Dica: segure o FAB para escolher tipo de nota.",
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = { showFabHint = false }) {
+                            Text("OK")
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+            }
 
             when {
                 uiState.isLoading -> {
