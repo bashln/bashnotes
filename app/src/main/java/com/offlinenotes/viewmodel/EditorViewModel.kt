@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.offlinenotes.data.NoteFileNaming
 import com.offlinenotes.data.NotesRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -86,6 +87,26 @@ class EditorViewModel(
 
     fun saveSilently() {
         save(showFeedback = false)
+    }
+
+    fun renameCurrentNote(newName: String) {
+        viewModelScope.launch {
+            val targetName = runCatching {
+                NoteFileNaming.normalizeRename(_uiState.value.title, newName)
+            }.getOrElse {
+                _events.emit(EditorEvent.ShowMessage(it.message ?: "Nome invalido"))
+                return@launch
+            }
+
+            notesRepository.renameNote(_uiState.value.uri, targetName)
+                .onSuccess {
+                    _uiState.update { it.copy(title = targetName) }
+                    _events.emit(EditorEvent.ShowMessage("Nome atualizado"))
+                }
+                .onFailure {
+                    _events.emit(EditorEvent.ShowMessage(it.message ?: "Falha ao renomear"))
+                }
+        }
     }
 
     private fun load() {

@@ -9,8 +9,6 @@ import com.offlinenotes.data.NotesRepository
 import com.offlinenotes.data.SettingsRepository
 import com.offlinenotes.domain.NoteKind
 import com.offlinenotes.domain.NoteMeta
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -61,8 +59,12 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
                         android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 getApplication<Application>().contentResolver.takePersistableUriPermission(uri, flags)
                 settingsRepository.saveRootUri(uri)
-            }.onFailure {
-                _events.emit(NotesListEvent.ShowMessage("Nao foi possivel salvar a pasta"))
+            }.onFailure { error ->
+                _events.emit(
+                    NotesListEvent.ShowMessage(
+                        error.message ?: "Nao foi possivel salvar a pasta"
+                    )
+                )
             }
         }
     }
@@ -71,6 +73,24 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
         val rootUri = _uiState.value.rootUri ?: return
         viewModelScope.launch {
             notesRepository.createNote(rootUri, name, kind)
+                .onSuccess { createdUri ->
+                    if (kind == NoteKind.MARKDOWN_TASKS) {
+                        val content = "- [ ] Item 1\n- [ ] Item 2\n"
+                        notesRepository.writeNote(createdUri, content)
+                    }
+                    refreshNotes()
+                    _events.emit(NotesListEvent.OpenEditor(createdUri))
+                }
+                .onFailure {
+                    _events.emit(NotesListEvent.ShowMessage(it.message ?: "Falha ao criar nota"))
+                }
+        }
+    }
+
+    fun createQuickNote(kind: NoteKind = NoteKind.MARKDOWN_NOTE) {
+        val rootUri = _uiState.value.rootUri ?: return
+        viewModelScope.launch {
+            notesRepository.createQuickNote(rootUri, kind)
                 .onSuccess { createdUri ->
                     if (kind == NoteKind.MARKDOWN_TASKS) {
                         val content = "- [ ] Item 1\n- [ ] Item 2\n"
@@ -115,11 +135,6 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun suggestedName(): String {
-        val now = LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE)
-        return "nota-$now"
-    }
-
     fun refreshNotes() {
         val rootUri = _uiState.value.rootUri ?: return
         viewModelScope.launch {
@@ -135,6 +150,7 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
                         errorMessage = error.message ?: "Erro ao listar notas"
                     )
                 }
+                _events.emit(NotesListEvent.ShowMessage(error.message ?: "Erro ao acessar pasta"))
             }
         }
     }
@@ -142,6 +158,13 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
     private fun observeRootFolder() {
         viewModelScope.launch {
             settingsRepository.rootUriFlow.collectLatest { uri ->
+                if (uri != null && !hasPersistedPermission(uri)) {
+                    settingsRepository.clearRootUri()
+                    _uiState.update { it.copy(rootUri = null, isLoading = false, notes = emptyList()) }
+                    _events.emit(NotesListEvent.ShowMessage("Permissao da pasta expirada. Escolha novamente."))
+                    return@collectLatest
+                }
+
                 _uiState.update { it.copy(rootUri = uri) }
                 if (uri != null) {
                     refreshNotes()
@@ -149,6 +172,13 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
                     _uiState.update { it.copy(isLoading = false, notes = emptyList()) }
                 }
             }
+        }
+    }
+
+    private fun hasPersistedPermission(uri: Uri): Boolean {
+        val permissions = getApplication<Application>().contentResolver.persistedUriPermissions
+        return permissions.any {
+            it.uri == uri && (it.isReadPermission || it.isWritePermission)
         }
     }
 

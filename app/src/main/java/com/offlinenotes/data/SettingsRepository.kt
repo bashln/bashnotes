@@ -23,4 +23,10 @@ class SettingsRepository(private val context: Context) {
             prefs[rootUriKey] = uri.toString()
         }
     }
+
+    suspend fun clearRootUri() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(rootUriKey)
+        }
+    }
 }

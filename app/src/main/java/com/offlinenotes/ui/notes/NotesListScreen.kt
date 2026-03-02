@@ -89,10 +89,7 @@ fun NotesListScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "OfflineNotes",
-                        style = androidx.compose.material3.MaterialTheme.typography.titleLarge
-                    )
+                    Text(text = "OfflineNotes")
                 },
                 actions = {
                     IconButton(onClick = { folderLauncher.launch(null) }) {
@@ -127,7 +124,7 @@ fun NotesListScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(scaffoldPadding)
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(16.dp)
         ) {
             OutlinedTextField(
                 value = uiState.query,
@@ -175,7 +172,7 @@ fun NotesListScreen(
                 else -> {
                     LazyColumn(
                         contentPadding = PaddingValues(bottom = 96.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(uiState.notes, key = { it.uri.toString() }) { note ->
                             NoteCard(

@@ -33,9 +33,15 @@ class NoteFileNamingTest {
     }
 
     @Test
-    fun `normalizeRename keeps provided extension`() {
+    fun `normalizeRename preserves original extension`() {
         val value = NoteFileNaming.normalizeRename("journal.md", "archive.org")
-        assertEquals("archive.org", value)
+        assertEquals("archive.md", value)
+    }
+
+    @Test
+    fun `normalizeRename replaces invalid characters`() {
+        val value = NoteFileNaming.normalizeRename("journal.org", "inv:alid/name")
+        assertEquals("inv_alid_name.org", value)
     }
 
     @Test(expected = java.io.IOException::class)

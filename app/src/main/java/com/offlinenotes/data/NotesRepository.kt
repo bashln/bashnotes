@@ -6,10 +6,13 @@ import androidx.documentfile.provider.DocumentFile
 import com.offlinenotes.domain.NoteKind
 import com.offlinenotes.domain.NoteMeta
 import java.io.IOException
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class NotesRepository(private val context: Context) {
+    private val quickNameFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm")
 
     suspend fun listNotes(rootUri: Uri, query: String = ""): List<NoteMeta> = withContext(Dispatchers.IO) {
         val root = DocumentFile.fromTreeUri(context, rootUri) ?: return@withContext emptyList()
@@ -65,6 +68,29 @@ class NotesRepository(private val context: Context) {
 
             val mimeType = if (fileName.endsWith(".org")) "text/plain" else "text/markdown"
             val file = root.createFile(mimeType, fileName)
+                ?: throw IOException("Nao foi possivel criar a nota")
+
+            file.uri
+        }
+    }
+
+    suspend fun createQuickNote(rootUri: Uri, kind: NoteKind): Result<Uri> = withContext(Dispatchers.IO) {
+        runCatching {
+            val root = DocumentFile.fromTreeUri(context, rootUri)
+                ?: throw IOException("Pasta raiz invalida")
+
+            val base = LocalDateTime.now().format(quickNameFormatter)
+            val extension = if (kind == NoteKind.ORG_NOTE) ".org" else ".md"
+            var counter = 0
+            var candidate = "$base$extension"
+
+            while (root.findFile(candidate) != null) {
+                counter += 1
+                candidate = "$base-${counter.toString().padStart(2, '0')}$extension"
+            }
+
+            val mimeType = if (extension == ".org") "text/plain" else "text/markdown"
+            val file = root.createFile(mimeType, candidate)
                 ?: throw IOException("Nao foi possivel criar a nota")
 
             file.uri

@@ -10,18 +10,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -34,13 +31,16 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,6 +65,10 @@ fun EditorScreen(
     )
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var renameValue by remember(uiState.title) {
+        mutableStateOf(uiState.title.removeSuffix(".md").removeSuffix(".org"))
+    }
 
     DisposableEffect(viewModel) {
         onDispose {
@@ -84,7 +88,12 @@ fun EditorScreen(
         containerColor = androidx.compose.material3.MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text(uiState.title) },
+                title = {
+                    Text(
+                        text = uiState.title,
+                        modifier = Modifier.clickable { showRenameDialog = true }
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = {
                         viewModel.saveSilently()
@@ -96,7 +105,7 @@ fun EditorScreen(
                 actions = {
                     IconButton(onClick = { viewModel.save() }) {
                         Icon(
-                            Icons.Default.Save,
+                            imageVector = Icons.Default.Save,
                             contentDescription = "Salvar",
                             tint = androidx.compose.material3.MaterialTheme.colorScheme.primary
                         )
@@ -129,29 +138,25 @@ fun EditorScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(scaffoldPadding)
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .verticalScroll(rememberScrollState()),
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = uiState.title,
-                style = androidx.compose.material3.MaterialTheme.typography.titleLarge
-            )
-
             OutlinedTextField(
                 value = uiState.text,
                 onValueChange = viewModel::onTextChanged,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 320.dp)
-                    .height(360.dp),
+                    .weight(1f),
                 textStyle = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
                 placeholder = { Text("Escreva sua nota...") },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
                     unfocusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
-                    disabledContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant
-                )
+                    disabledContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
+                    focusedBorderColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                    cursorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary
+                ),
+                shape = androidx.compose.material3.MaterialTheme.shapes.medium
             )
 
             if (uiState.checklistLines.isNotEmpty()) {
@@ -162,7 +167,10 @@ fun EditorScreen(
                     shape = androidx.compose.material3.MaterialTheme.shapes.medium,
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Text("Checklist")
                         uiState.checklistLines.forEach { item ->
                             Row(
@@ -190,5 +198,33 @@ fun EditorScreen(
                 }
             }
         }
+    }
+
+    if (showRenameDialog) {
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title = { Text("Renomear arquivo") },
+            text = {
+                OutlinedTextField(
+                    value = renameValue,
+                    onValueChange = { renameValue = it },
+                    singleLine = true,
+                    placeholder = { Text("nome-do-arquivo") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showRenameDialog = false
+                    viewModel.renameCurrentNote(renameValue)
+                }) {
+                    Text("Salvar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRenameDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }

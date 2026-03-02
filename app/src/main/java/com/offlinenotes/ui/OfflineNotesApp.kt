@@ -2,11 +2,15 @@ package com.offlinenotes.ui
 
 import android.app.Application
 import android.net.Uri
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -21,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,8 +38,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.offlinenotes.domain.NoteKind
 import com.offlinenotes.ui.editor.EditorScreen
-import com.offlinenotes.ui.notes.CreateNoteDialog
 import com.offlinenotes.ui.notes.NotesListScreen
 import com.offlinenotes.ui.sync.SyncScreen
 import com.offlinenotes.viewmodel.NotesListEvent
@@ -58,7 +63,7 @@ fun OfflineNotesApp() {
         factory = NotesListViewModel.factory(app)
     )
     val notesState by notesViewModel.uiState.collectAsStateWithLifecycle()
-    var showCreateDialog by remember { mutableStateOf(false) }
+    var showFabMenu by remember { mutableStateOf(false) }
 
     ObserveNotesEvents(notesViewModel) { event ->
         when (event) {
@@ -130,12 +135,44 @@ fun OfflineNotesApp() {
         },
         floatingActionButton = {
             if (showFab) {
-                FloatingActionButton(
-                    onClick = { showCreateDialog = true },
-                    containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                    contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = "Criar nota")
+                androidx.compose.foundation.layout.Box {
+                    FloatingActionButton(
+                        onClick = { notesViewModel.createQuickNote(NoteKind.MARKDOWN_NOTE) },
+                        modifier = Modifier.pointerInput(Unit) {
+                            detectTapGestures(onLongPress = { showFabMenu = true })
+                        },
+                        containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                        contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = "Criar nota")
+                    }
+                    DropdownMenu(
+                        expanded = showFabMenu,
+                        onDismissRequest = { showFabMenu = false },
+                        modifier = Modifier.wrapContentSize()
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Nota (.md)") },
+                            onClick = {
+                                showFabMenu = false
+                                notesViewModel.createQuickNote(NoteKind.MARKDOWN_NOTE)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Checklist (.md)") },
+                            onClick = {
+                                showFabMenu = false
+                                notesViewModel.createQuickNote(NoteKind.MARKDOWN_TASKS)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Org (.org)") },
+                            onClick = {
+                                showFabMenu = false
+                                notesViewModel.createQuickNote(NoteKind.ORG_NOTE)
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -167,17 +204,6 @@ fun OfflineNotesApp() {
                 )
             }
         }
-    }
-
-    if (showCreateDialog) {
-        CreateNoteDialog(
-            initialName = notesViewModel.suggestedName(),
-            onDismiss = { showCreateDialog = false },
-            onConfirm = { name, kind ->
-                showCreateDialog = false
-                notesViewModel.createNote(name, kind)
-            }
-        )
     }
 }
 
