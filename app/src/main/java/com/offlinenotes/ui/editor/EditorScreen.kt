@@ -1,9 +1,10 @@
 package com.offlinenotes.ui.editor
 
 import android.app.Application
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -36,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +53,7 @@ import com.offlinenotes.viewmodel.EditorViewModel
 fun EditorScreen(
     paddingValues: PaddingValues,
     noteUri: Uri,
-    onFolderSelected: (Uri) -> Unit,
+    onFolderSelected: (Uri, Int) -> Unit,
     onBack: () -> Unit
 ) {
     val app = LocalContext.current.applicationContext as Application
@@ -62,22 +64,40 @@ fun EditorScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var showRenameDialog by remember { mutableStateOf(false) }
+    var skipDisposeAutoSave by remember { mutableStateOf(false) }
+    var isPreviewMode by rememberSaveable(noteUri.toString()) { mutableStateOf(false) }
     val currentExtension = if (uiState.title.endsWith(".org")) ".org" else ".md"
     var renameValue by remember(uiState.title) {
         mutableStateOf(uiState.title.removeSuffix(".md").removeSuffix(".org"))
     }
 
     val folderLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
+        contract = StartActivityForResult()
+    ) { result ->
+        val data = result.data
+        val uri: Uri? = data?.data
         if (uri != null) {
-            onFolderSelected(uri)
+            onFolderSelected(uri, data.flags)
         }
+    }
+
+    fun launchFolderPicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
+            )
+        }
+        folderLauncher.launch(intent)
     }
 
     DisposableEffect(viewModel) {
         onDispose {
-            viewModel.saveSilently()
+            if (!skipDisposeAutoSave) {
+                viewModel.saveSilently()
+            }
         }
     }
 
@@ -89,7 +109,7 @@ fun EditorScreen(
                     actionLabel = if (event.allowReselect) "Re-selecionar" else null
                 )
                 if (event.allowReselect && result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
-                    folderLauncher.launch(null)
+                    launchFolderPicker()
                 }
             }
         }
@@ -107,19 +127,45 @@ fun EditorScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        viewModel.saveSilently()
-                        onBack()
+                        viewModel.saveSilently {
+                            skipDisposeAutoSave = true
+                            onBack()
+                        }
                     }) {
                         Icon(Icons.Default.ArrowBackIosNew, contentDescription = "Voltar")
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.save() }) {
-                        Icon(
-                            imageVector = Icons.Default.Save,
-                            contentDescription = "Salvar",
-                            tint = androidx.compose.material3.MaterialTheme.colorScheme.primary
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        TextButton(onClick = { isPreviewMode = false }) {
+                            Text(
+                                text = "Edit",
+                                color = if (!isPreviewMode) {
+                                    androidx.compose.material3.MaterialTheme.colorScheme.primary
+                                } else {
+                                    androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                        }
+                        TextButton(onClick = { isPreviewMode = true }) {
+                            Text(
+                                text = "View",
+                                color = if (isPreviewMode) {
+                                    androidx.compose.material3.MaterialTheme.colorScheme.primary
+                                } else {
+                                    androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                        }
+                    }
+                    if (!isPreviewMode) {
+                        IconButton(onClick = { viewModel.save() }) {
+                            Icon(
+                                imageVector = Icons.Default.Save,
+                                contentDescription = "Salvar",
+                                tint = androidx.compose.material3.MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -152,22 +198,32 @@ fun EditorScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            TextField(
-                value = uiState.text,
-                onValueChange = viewModel::onTextChanged,
-                modifier = Modifier.fillMaxSize(),
-                textStyle = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
-                placeholder = { Text("Escreva sua nota...") },
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
-                    unfocusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
-                    disabledContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
-                    focusedIndicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                    unfocusedIndicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.outline,
-                    cursorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary
-                ),
-                shape = androidx.compose.material3.MaterialTheme.shapes.medium
-            )
+            if (!isPreviewMode) {
+                TextField(
+                    value = uiState.text,
+                    onValueChange = viewModel::onTextChanged,
+                    modifier = Modifier.fillMaxSize(),
+                    textStyle = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                    placeholder = { Text("Escreva sua nota...") },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
+                        disabledContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
+                        focusedIndicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                        unfocusedIndicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.outline,
+                        cursorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary
+                    ),
+                    shape = androidx.compose.material3.MaterialTheme.shapes.medium
+                )
+            } else {
+                NotePreviewContent(
+                    text = uiState.text,
+                    isOrg = currentExtension == ".org",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(4.dp)
+                )
+            }
         }
     }
 

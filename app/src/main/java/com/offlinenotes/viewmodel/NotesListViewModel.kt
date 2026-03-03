@@ -1,7 +1,9 @@
 package com.offlinenotes.viewmodel
 
 import android.app.Application
+import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -35,6 +37,7 @@ sealed interface NotesListEvent {
 }
 
 class NotesListViewModel(application: Application) : AndroidViewModel(application) {
+    private val tag = "NotesListViewModel"
     private val settingsRepository = SettingsRepository(application)
     private val notesRepository = NotesRepository(application)
     private var allNotesCache: List<NoteMeta> = emptyList()
@@ -56,13 +59,12 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
         scheduleFilter()
     }
 
-    fun onFolderSelected(uri: Uri) {
+    fun onFolderSelected(uri: Uri, returnedFlags: Int) {
         viewModelScope.launch {
-            runCatching {
-                val flags =
-                    android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
-                        android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                getApplication<Application>().contentResolver.takePersistableUriPermission(uri, flags)
+            try {
+                val rwMask = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                Log.d(tag, "Folder picker result uri=$uri flags=$returnedFlags")
+                getApplication<Application>().contentResolver.takePersistableUriPermission(uri, rwMask)
                 if (!hasPersistedReadWritePermission(uri)) {
                     throw SecurityException("Sem permissao de escrita")
                 }
@@ -71,7 +73,9 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
                 allNotesCache = emptyList()
                 _uiState.update { it.copy(rootUri = uri) }
                 refreshNotes(forceReload = true)
-            }.onFailure { error ->
+            } catch (error: Throwable) {
+                Log.w(tag, "Folder selection failed", error)
+                resetFolderSelection()
                 _events.emit(
                     NotesListEvent.ShowMessage(
                         mapStorageError(error, "Nao foi possivel salvar a pasta"),
@@ -88,6 +92,7 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             notesRepository.createQuickNote(rootUri, targetKind)
                 .onSuccess { createdUri ->
+                    Log.d(tag, "createQuickNote success: openEditor uri=$createdUri")
                     if (targetKind == NoteKind.MARKDOWN_TASKS) {
                         val content = "- [ ] Item 1\n- [ ] Item 2\n"
                         notesRepository.writeNote(createdUri, content)
@@ -235,11 +240,15 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun clearFolderSelectionWithMessage(message: String) {
         viewModelScope.launch {
-            allNotesCache = emptyList()
-            settingsRepository.clearRootUri()
-            _uiState.update { it.copy(rootUri = null, isLoading = false, notes = emptyList(), query = "") }
+            resetFolderSelection()
             _events.emit(NotesListEvent.ShowMessage(message, allowReselect = true))
         }
+    }
+
+    private suspend fun resetFolderSelection() {
+        allNotesCache = emptyList()
+        settingsRepository.clearRootUri()
+        _uiState.update { it.copy(rootUri = null, isLoading = false, notes = emptyList(), query = "") }
     }
 
     private fun validateExistingFolderAccess(uri: Uri): Boolean {

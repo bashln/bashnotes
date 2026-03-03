@@ -2,6 +2,9 @@ package com.offlinenotes.data
 
 import android.content.Context
 import android.net.Uri
+import android.provider.DocumentsContract
+import android.provider.OpenableColumns
+import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.offlinenotes.domain.NoteKind
 import com.offlinenotes.domain.NoteMeta
@@ -12,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class NotesRepository(private val context: Context) {
+    private val tag = "NotesRepo"
     private val quickNameFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm")
 
     suspend fun listNotes(rootUri: Uri): List<NoteMeta> = withContext(Dispatchers.IO) {
@@ -74,14 +78,27 @@ class NotesRepository(private val context: Context) {
             val file = root.createFile(mimeType, candidate)
                 ?: throw IOException("Sem permissao de escrita nesta pasta. Selecione outra pasta.")
 
+            Log.d(tag, "createQuickNote: candidate=$candidate mimeType=$mimeType createdName=${file.name} uri=${file.uri}")
+            var finalUri = file.uri
+
             if (extension == ".org") {
                 val createdName = file.name.orEmpty()
-                if (createdName.endsWith(".txt") && createdName != candidate) {
-                    file.renameTo(candidate)
+                if (createdName != candidate) {
+                    Log.d(tag, "createQuickNote: name mismatch '$createdName' -> '$candidate', renaming")
+                    val renamedUri = DocumentsContract.renameDocument(
+                        context.contentResolver, file.uri, candidate
+                    )
+                    if (renamedUri != null) {
+                        Log.d(tag, "createQuickNote: rename ok newUri=$renamedUri")
+                        finalUri = renamedUri
+                    } else {
+                        Log.w(tag, "createQuickNote: rename failed, keeping uri=$finalUri name=$createdName")
+                    }
                 }
             }
 
-            root.findFile(candidate)?.uri ?: file.uri
+            Log.d(tag, "createQuickNote: returning finalUri=$finalUri")
+            finalUri
         }
     }
 
@@ -90,7 +107,7 @@ class NotesRepository(private val context: Context) {
             val root = DocumentFile.fromTreeUri(context, rootUri)
                 ?: throw IOException("Pasta raiz invalida")
 
-            val probeName = ".offlinenotes_write_probe_${System.currentTimeMillis()}"
+            val probeName = "offlinenotes_write_probe_${System.currentTimeMillis()}"
             val probe = root.createFile("text/plain", probeName)
                 ?: throw IOException("Sem permissao de escrita nesta pasta. Selecione outra pasta.")
 
@@ -100,6 +117,7 @@ class NotesRepository(private val context: Context) {
     }
 
     suspend fun readNote(noteUri: Uri): Result<String> = withContext(Dispatchers.IO) {
+        Log.d(tag, "readNote: uri=$noteUri")
         runSafResult("Falha ao abrir nota") {
             context.contentResolver.openInputStream(noteUri)?.bufferedReader()?.use { it.readText() }
                 ?: ""
@@ -107,6 +125,7 @@ class NotesRepository(private val context: Context) {
     }
 
     suspend fun writeNote(noteUri: Uri, content: String): Result<Unit> = withContext(Dispatchers.IO) {
+        Log.d(tag, "writeNote: uri=$noteUri length=${content.length}")
         runSafResult("Falha ao salvar nota") {
             context.contentResolver.openOutputStream(noteUri, "wt")?.bufferedWriter()?.use { writer ->
                 writer.write(content)
@@ -114,28 +133,23 @@ class NotesRepository(private val context: Context) {
         }
     }
 
-    suspend fun renameNote(noteUri: Uri, newName: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun renameNote(noteUri: Uri, newName: String): Result<Uri> = withContext(Dispatchers.IO) {
         runSafResult("Falha ao renomear") {
-            val file = DocumentFile.fromSingleUri(context, noteUri)
-                ?: throw IOException("Arquivo nao encontrado")
-
-            val currentName = file.name.orEmpty()
+            val currentName = resolveNoteName(noteUri)
             val targetName = NoteFileNaming.normalizeRename(currentName, newName)
             if (!NoteFileNaming.isNoteFile(targetName)) {
                 throw IOException("Extensao invalida. Use .md ou .org")
             }
 
-            if (!file.renameTo(targetName)) {
-                throw IOException("Falha ao renomear arquivo")
-            }
+            DocumentsContract.renameDocument(context.contentResolver, noteUri, targetName)
+                ?: throw IOException("Falha ao renomear arquivo")
         }
     }
 
     suspend fun deleteNote(noteUri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
         runSafResult("Falha ao deletar") {
-            val file = DocumentFile.fromSingleUri(context, noteUri)
-                ?: throw IOException("Arquivo nao encontrado")
-            if (!file.delete()) {
+            val deleted = DocumentsContract.deleteDocument(context.contentResolver, noteUri)
+            if (!deleted) {
                 throw IOException("Falha ao deletar arquivo")
             }
         }
@@ -143,17 +157,62 @@ class NotesRepository(private val context: Context) {
 
     suspend fun getNoteName(noteUri: Uri): Result<String> = withContext(Dispatchers.IO) {
         runSafResult("Falha ao abrir nota") {
-            DocumentFile.fromSingleUri(context, noteUri)?.name
-                ?: throw IOException("Arquivo nao encontrado")
+            resolveNoteName(noteUri)
         }
+    }
+
+    private fun resolveNoteName(noteUri: Uri): String {
+        runCatching {
+            context.contentResolver.query(
+                noteUri,
+                arrayOf(OpenableColumns.DISPLAY_NAME),
+                null,
+                null,
+                null
+            )?.use { cursor ->
+                val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (index >= 0 && cursor.moveToFirst()) {
+                    val displayName = cursor.getString(index)
+                    if (!displayName.isNullOrBlank()) {
+                        return displayName
+                    }
+                }
+            }
+        }.onFailure { error ->
+            Log.w(tag, "resolveNoteName query failed for uri=$noteUri", error)
+        }
+
+        val fromDocId = runCatching {
+            DocumentsContract.getDocumentId(noteUri)
+                .substringAfterLast('/')
+                .substringAfterLast(':')
+        }.getOrNull()
+
+        if (!fromDocId.isNullOrBlank()) {
+            return fromDocId
+        }
+
+        return noteUri.lastPathSegment?.substringAfterLast('/') ?: "Nota"
     }
 
     private fun <T> runSafResult(fallback: String, block: () -> T): Result<T> {
         return runCatching(block).recoverCatching { error ->
+            Log.e(tag, "SAF error [${error.javaClass.simpleName}]: ${error.message}", error)
+            val message = error.message.orEmpty().lowercase()
+            if (message.contains("unsupported uri")) {
+                throw IOException("Arquivo de nota invalido. Selecione a pasta novamente.")
+            }
             when (error) {
                 is SecurityException -> throw IOException(
                     "Sem permissao para acessar a pasta. Selecione a pasta novamente."
                 )
+
+                is IOException -> {
+                    if (message.contains("eisdir") || message.contains("is a directory")) {
+                        throw IOException("Arquivo de nota invalido. Selecione a pasta novamente.")
+                    }
+                    throw IOException(error.message ?: fallback)
+                }
 
                 else -> throw IOException(error.message ?: fallback)
             }

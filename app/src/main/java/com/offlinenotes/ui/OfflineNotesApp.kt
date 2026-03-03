@@ -1,7 +1,7 @@
 package com.offlinenotes.ui
 
 import android.app.Application
-import android.net.Uri
+import android.util.Base64
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.wrapContentSize
@@ -60,7 +60,11 @@ fun OfflineNotesApp() {
     ObserveNotesEvents(notesViewModel) { event ->
         when (event) {
             is NotesListEvent.OpenEditor -> {
-                navController.navigate("${Routes.EDITOR}/${Uri.encode(event.noteUri.toString())}")
+                val encoded = Base64.encodeToString(
+                    event.noteUri.toString().toByteArray(Charsets.UTF_8),
+                    Base64.URL_SAFE or Base64.NO_WRAP
+                )
+                navController.navigate("${Routes.EDITOR}/$encoded")
             }
 
             is NotesListEvent.ShowMessage -> Unit
@@ -142,12 +146,19 @@ fun OfflineNotesApp() {
                 arguments = listOf(navArgument(Routes.EDITOR_ARG) { type = NavType.StringType })
             ) { backStackEntry ->
                 val encoded = backStackEntry.arguments?.getString(Routes.EDITOR_ARG).orEmpty()
-                val uri = Uri.decode(encoded).toUri()
+                val decoded = String(
+                    Base64.decode(encoded, Base64.URL_SAFE or Base64.NO_WRAP),
+                    Charsets.UTF_8
+                )
+                val uri = decoded.toUri()
                 EditorScreen(
                     paddingValues = padding,
                     noteUri = uri,
                     onFolderSelected = notesViewModel::onFolderSelected,
-                    onBack = { navController.popBackStack() }
+                    onBack = {
+                        navController.popBackStack()
+                        notesViewModel.refreshNotes(forceReload = true)
+                    }
                 )
             }
         }

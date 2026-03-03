@@ -71,27 +71,34 @@ class EditorViewModel(
 
     fun save(showFeedback: Boolean = true) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isSaving = true) }
-            notesRepository.writeNote(_uiState.value.uri, _uiState.value.text)
-                .onSuccess {
-                    if (showFeedback) {
-                        _events.emit(EditorEvent.ShowMessage("Nota salva"))
-                    }
-                }
-                .onFailure {
-                    _events.emit(
-                        EditorEvent.ShowMessage(
-                            it.message ?: "Falha ao salvar",
-                            allowReselect = isPermissionMessage(it.message)
-                        )
-                    )
-                }
-            _uiState.update { it.copy(isSaving = false) }
+            saveInternal(showFeedback = showFeedback)
         }
     }
 
-    fun saveSilently() {
-        save(showFeedback = false)
+    fun saveSilently(onComplete: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            saveInternal(showFeedback = false)
+            onComplete?.invoke()
+        }
+    }
+
+    private suspend fun saveInternal(showFeedback: Boolean) {
+        _uiState.update { it.copy(isSaving = true) }
+        notesRepository.writeNote(_uiState.value.uri, _uiState.value.text)
+            .onSuccess {
+                if (showFeedback) {
+                    _events.emit(EditorEvent.ShowMessage("Nota salva"))
+                }
+            }
+            .onFailure {
+                _events.emit(
+                    EditorEvent.ShowMessage(
+                        it.message ?: "Falha ao salvar",
+                        allowReselect = isPermissionMessage(it.message)
+                    )
+                )
+            }
+        _uiState.update { it.copy(isSaving = false) }
     }
 
     fun renameCurrentNote(newName: String) {
@@ -104,8 +111,8 @@ class EditorViewModel(
             }
 
             notesRepository.renameNote(_uiState.value.uri, targetName)
-                .onSuccess {
-                    _uiState.update { it.copy(title = targetName) }
+                .onSuccess { renamedUri ->
+                    _uiState.update { it.copy(title = targetName, uri = renamedUri) }
                     _events.emit(EditorEvent.ShowMessage("Nome atualizado"))
                 }
                 .onFailure {
@@ -148,7 +155,10 @@ class EditorViewModel(
     }
 
     private fun isPermissionMessage(message: String?): Boolean {
-        return message.orEmpty().lowercase().contains("permissao")
+        val value = message.orEmpty().lowercase()
+        return value.contains("permissao") ||
+            value.contains("arquivo de nota invalido") ||
+            value.contains("directory")
     }
 
     companion object {

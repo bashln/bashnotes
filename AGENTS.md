@@ -15,7 +15,7 @@ Repository guide for agentic coding tools working on OfflineNotes.
 - OfflineNotes is not an IDE and not a second-brain platform.
 - Privacy-first rule: never add telemetry, analytics, remote logging, cloud APIs, or background data exfiltration.
 - Keep UX minimal: list -> open -> write -> save.
-- Do not implement: backlinks, graph, plugins, advanced markdown preview, attachments,
+- Do not implement: backlinks, graph, plugins, attachments,
   database as source-of-truth, AI features, login, WebDAV, built-in sync.
 - Sync screen is informational only; mention external Nextcloud usage.
 

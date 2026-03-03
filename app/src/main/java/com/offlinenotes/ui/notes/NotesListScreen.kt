@@ -2,7 +2,8 @@ package com.offlinenotes.ui.notes
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
+import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -63,7 +64,7 @@ import com.offlinenotes.viewmodel.NotesListViewModel
 fun NotesListScreen(
     paddingValues: PaddingValues,
     viewModel: NotesListViewModel,
-    onFolderSelected: (Uri) -> Unit,
+    onFolderSelected: (Uri, Int) -> Unit,
     onOpenSyncHelp: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -74,11 +75,25 @@ fun NotesListScreen(
     var topMenuExpanded by remember { mutableStateOf(false) }
 
     val folderLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocumentTree()
-    ) { uri: Uri? ->
+        contract = StartActivityForResult()
+    ) { result ->
+        val data = result.data
+        val uri: Uri? = data?.data
         if (uri != null) {
-            onFolderSelected(uri)
+            onFolderSelected(uri, data.flags)
         }
+    }
+
+    fun launchFolderPicker() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
+            )
+        }
+        folderLauncher.launch(intent)
     }
 
     LaunchedEffect(viewModel) {
@@ -89,7 +104,7 @@ fun NotesListScreen(
                     actionLabel = if (event.allowReselect) "Selecionar pasta" else null
                 )
                 if (event.allowReselect && result == androidx.compose.material3.SnackbarResult.ActionPerformed) {
-                    folderLauncher.launch(null)
+                    launchFolderPicker()
                 }
             }
         }
@@ -121,7 +136,7 @@ fun NotesListScreen(
                             text = { Text("Selecionar pasta") },
                             onClick = {
                                 topMenuExpanded = false
-                                folderLauncher.launch(null)
+                                launchFolderPicker()
                             }
                         )
                         DropdownMenuItem(
@@ -159,7 +174,7 @@ fun NotesListScreen(
                     .fillMaxSize()
                     .padding(bottom = paddingValues.calculateBottomPadding())
                     .padding(scaffoldPadding),
-                onPickFolder = { folderLauncher.launch(null) }
+                onPickFolder = { launchFolderPicker() }
             )
             return@Scaffold
         }
