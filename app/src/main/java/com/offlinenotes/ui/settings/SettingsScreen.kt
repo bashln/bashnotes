@@ -2,11 +2,13 @@ package com.offlinenotes.ui.settings
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -30,6 +32,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.offlinenotes.ui.theme.ThemeMode
 import com.offlinenotes.ui.theme.ThemePalette
@@ -49,7 +52,16 @@ fun SettingsScreen(
     onOpenSyncHelp: () -> Unit,
     onOpenPrivacy: () -> Unit
 ) {
+    val context = LocalContext.current
     val formatLabel = if (isOrgDefault) "Org" else "Markdown"
+    val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+    val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        packageInfo.longVersionCode
+    } else {
+        @Suppress("DEPRECATION")
+        packageInfo.versionCode.toLong()
+    }
+    val appVersionLabel = "Versao: ${packageInfo.versionName}+$versionCode"
 
     val folderLauncher = rememberLauncherForActivityResult(
         contract = StartActivityForResult()
@@ -178,6 +190,14 @@ fun SettingsScreen(
                     )
                 },
                 onClick = onOpenPrivacy
+            )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Text(
+                text = appVersionLabel,
+                style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                color = androidx.compose.material3.MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
