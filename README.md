@@ -1,34 +1,107 @@
 # OfflineNotes
 
-Offline-first Android notes app focused on speed and simplicity.
+<div align="center">
 
-## Stack
-- Kotlin
-- Jetpack Compose + Material 3
-- Navigation Compose
-- DataStore Preferences
-- SAF (`ACTION_OPEN_DOCUMENT_TREE`) for file-based notes (`.md` and `.org`)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-blue.svg?style=for-the-badge)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/bashln/bashnotes?style=for-the-badge)](https://github.com/bashln/bashnotes/stargazers)
+[![Forks](https://img.shields.io/github/forks/bashln/bashnotes?style=for-the-badge)](https://github.com/bashln/bashnotes/network/members)
+[![Issues](https://img.shields.io/github/issues/bashln/bashnotes?style=for-the-badge)](https://github.com/bashln/bashnotes/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/bashln/bashnotes?style=for-the-badge)](https://github.com/bashln/bashnotes/commits/main)
 
-## Notes
-- No built-in sync, no network layer.
-- Files are the source of truth.
-- Bottom navigation contains only `Notas` and `Sync`.
-- Formato padrao de nova nota: `.org` (alteravel no menu da tela `Notas`).
+</div>
 
-## Como selecionar pasta
-- Abra o app e toque no menu (hamburger) na tela `Notas`.
-- Toque em `Selecionar pasta`.
-- Escolha uma pasta usando o seletor do Android (SAF).
-- Escolha uma pasta com permissao de escrita (ex.: `Documents/OfflineNotes`).
-- O app salva a permissao persistente para reabrir sem pedir novamente.
+OfflineNotes is an Android notes app built to be simple, private, and offline-first.
+Source of truth is plain text files (`.org` and `.md`) in a user-selected folder.
 
-## Formato padrao de novas notas
-- No menu da tela `Notas`, use `Formato padrao: Org/Markdown` para alternar.
-- Toque normal no FAB cria usando esse formato padrao.
-- Pressione e segure o FAB para escolher pontualmente entre `.md`, checklist `.md` e `.org`.
+## PT-BR
 
-## Se der erro de permissao
-- Mensagem esperada: `Sem permissao para acessar a pasta. Selecione a pasta novamente.`
-- Toque em `Selecionar pasta` no aviso e escolha a pasta de novo.
-- Se aparecer erro de escrita, selecione outra pasta onde o app possa criar arquivos.
-- O app usa somente URIs `content://` do SAF para ler e salvar arquivos.
+### Visao geral
+- 100% offline para o uso principal (anotacoes).
+- Sem backend, sem conta, sem telemetria e sem analytics.
+- Usa SAF (`ACTION_OPEN_DOCUMENT_TREE`) para leitura/escrita de arquivos.
+- Arquivos `.org` e `.md` sao a fonte de verdade.
+
+### Recursos
+- Lista e edicao de notas locais.
+- Criacao rapida de nota (`.org` padrao; alternavel para markdown).
+- Checklist por texto (`- [ ]`, `- [x]`, `- [X]`).
+- Renomear, excluir, auto-save.
+- Modo `Edit` e `View` no editor.
+- Preview basico para Org/Markdown (headers, listas, checklists, negrito/italico, inline code, links).
+
+### Como rodar
+```bash
+./gradlew :app:assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+### Comandos de validacao
+```bash
+./gradlew :app:testDebugUnitTest
+./gradlew :app:lint
+./gradlew :app:assembleDebug
+```
+
+### Privacidade (resumo)
+- O app nao precisa de internet para funcionar.
+- O app nao envia seus dados para servidores.
+- O app nao coleta dados pessoais, nao rastreia uso e nao usa SDK de analytics.
+- Todo conteudo fica sob controle do usuario, na pasta selecionada via SAF.
+- Seus dados sao seus, apenas seus.
+
+Politica completa: veja `PRIVACY.md`.
+
+## EN
+
+### Overview
+- Fully offline for the core use case (note taking).
+- No backend, no account, no telemetry, no analytics.
+- Uses SAF (`ACTION_OPEN_DOCUMENT_TREE`) for file read/write access.
+- `.org` and `.md` files are the source of truth.
+
+### Features
+- Local note listing and editing.
+- Quick note creation (`.org` by default, switchable to markdown).
+- Text checklist support (`- [ ]`, `- [x]`, `- [X]`).
+- Rename, delete, auto-save.
+- `Edit` and `View` editor modes.
+- Basic Org/Markdown preview (headings, lists, checklists, bold/italic, inline code, links).
+
+### Run locally
+```bash
+./gradlew :app:assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+### Validation commands
+```bash
+./gradlew :app:testDebugUnitTest
+./gradlew :app:lint
+./gradlew :app:assembleDebug
+```
+
+### Privacy (summary)
+- The app does not require internet access to work.
+- The app does not upload your notes to remote servers.
+- The app does not collect personal data, track usage, or include analytics SDKs.
+- All data stays under user control in the SAF-selected folder.
+- Your data is yours, and only yours.
+
+Full policy: see `PRIVACY.md`.
+
+## License
+
+This project is licensed under **GNU AGPLv3**.
+
+If you distribute a modified version, you must provide the corresponding source code under AGPLv3.
+AGPL obligations can also apply when modified versions are provided for network use.
+
+See `LICENSE`.
+
+## Third-party credits
+
+OfflineNotes uses Android and Jetpack libraries (AndroidX / Google ecosystem), such as Compose,
+Navigation, DataStore, DocumentFile, Material Components, and JUnit for tests.
+
+These dependencies are from third-party open-source projects and should be acknowledged.
+See `THIRD_PARTY_NOTICES.md` for a concise notice list.
