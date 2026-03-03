@@ -114,6 +114,23 @@ case "$( uname )" in                #(
   NONSTOP* )        nonstop=true ;;
 esac
 
+# Prefer a Java 21 installation when available and JAVA_HOME is unset.
+# This avoids known Kotlin DSL bootstrap issues on newer JDK majors.
+if [ -z "$JAVA_HOME" ] ; then
+    for candidate in \
+        /usr/lib/jvm/java-21-openjdk \
+        /usr/lib/jvm/jdk-21 \
+        /usr/lib/jvm/temurin-21-jdk \
+        /Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home
+    do
+        if [ -x "$candidate/bin/java" ] ; then
+            JAVA_HOME=$candidate
+            export JAVA_HOME
+            break
+        fi
+    done
+fi
+
 
 
 # Determine the Java command to use to start the JVM.

@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,16 +26,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-
-private sealed interface PreviewBlock {
-    data class Heading(val level: Int, val text: String) : PreviewBlock
-    data class Checklist(val checked: Boolean, val text: String, val indentLevel: Int) : PreviewBlock
-    data class Bullet(val text: String, val indentLevel: Int) : PreviewBlock
-    data class Paragraph(val text: String) : PreviewBlock
-    data object Empty : PreviewBlock
-}
 
 @Composable
 fun NotePreviewContent(
@@ -69,60 +64,120 @@ fun NotePreviewContent(
                 }
 
                 is PreviewBlock.Checklist -> {
-                    androidx.compose.foundation.layout.Row(
-                        verticalAlignment = Alignment.Top,
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+                        ),
                         modifier = Modifier.padding(
                             start = (block.indentLevel * 12).dp,
                             top = 2.dp,
                             bottom = 2.dp
                         )
                     ) {
-                        Icon(
-                            imageVector = if (block.checked) {
-                                Icons.Default.CheckBox
-                            } else {
-                                Icons.Default.CheckBoxOutlineBlank
-                            },
-                            contentDescription = null,
-                            tint = if (block.checked) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                            modifier = Modifier.padding(top = 1.dp)
-                        )
-                        PreviewText(
-                            text = buildInlineStyledText(
-                                text = block.text,
-                                isOrg = isOrg,
-                                linkColor = MaterialTheme.colorScheme.primary,
-                                codeBackground = MaterialTheme.colorScheme.surfaceVariant,
-                                codeTextColor = MaterialTheme.colorScheme.onSurface
-                            ),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(start = 8.dp)
-                        )
+                        androidx.compose.foundation.layout.Row(
+                            verticalAlignment = Alignment.Top,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (block.checked) {
+                                    Icons.Default.CheckBox
+                                } else {
+                                    Icons.Default.CheckBoxOutlineBlank
+                                },
+                                contentDescription = null,
+                                tint = if (block.checked) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                modifier = Modifier.padding(top = 1.dp)
+                            )
+                            PreviewText(
+                                text = buildInlineStyledText(
+                                    text = block.text,
+                                    isOrg = isOrg,
+                                    linkColor = MaterialTheme.colorScheme.primary,
+                                    codeBackground = MaterialTheme.colorScheme.surfaceVariant,
+                                    codeTextColor = MaterialTheme.colorScheme.onSurface
+                                ),
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    textDecoration = if (block.checked) {
+                                        TextDecoration.LineThrough
+                                    } else {
+                                        TextDecoration.None
+                                    }
+                                ),
+                                color = if (block.checked) {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
                     }
                 }
 
                 is PreviewBlock.Bullet -> {
-                    PreviewText(
-                        text = buildInlineStyledText(
-                            text = "- ${block.text}",
-                            isOrg = isOrg,
-                            linkColor = MaterialTheme.colorScheme.primary,
-                            codeBackground = MaterialTheme.colorScheme.surfaceVariant,
-                            codeTextColor = MaterialTheme.colorScheme.onSurface
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
                         ),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(
                             start = (block.indentLevel * 12).dp,
                             top = 2.dp,
                             bottom = 2.dp
                         )
-                    )
+                    ) {
+                        androidx.compose.foundation.layout.Row(
+                            verticalAlignment = Alignment.Top,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = "•",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            PreviewText(
+                                text = buildInlineStyledText(
+                                    text = block.text,
+                                    isOrg = isOrg,
+                                    linkColor = MaterialTheme.colorScheme.primary,
+                                    codeBackground = MaterialTheme.colorScheme.surfaceVariant,
+                                    codeTextColor = MaterialTheme.colorScheme.onSurface
+                                ),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                    }
+                }
+
+                is PreviewBlock.CodeBlock -> {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                        ),
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    ) {
+                        if (!block.languageHint.isNullOrBlank()) {
+                            Text(
+                                text = block.languageHint,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(start = 10.dp, top = 8.dp, end = 10.dp)
+                            )
+                        }
+                        Text(
+                            text = block.content.ifBlank { " " },
+                            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                        )
+                    }
                 }
 
                 is PreviewBlock.Paragraph -> {
@@ -161,49 +216,6 @@ private fun PreviewText(
         color = color,
         modifier = modifier
     )
-}
-
-private fun parsePreviewBlocks(text: String, isOrg: Boolean): List<PreviewBlock> {
-    if (text.isBlank()) {
-        return listOf(PreviewBlock.Paragraph("Nota vazia"))
-    }
-
-    val headingPattern = if (isOrg) {
-        Regex("^(\\*{1,6})\\s+(.+)$")
-    } else {
-        Regex("^(#{1,6})\\s+(.+)$")
-    }
-    val checklistPattern = Regex("^(\\s*)-\\s+\\[([ xX])\\]\\s+(.+)$")
-    val bulletPattern = Regex("^(\\s*)-\\s+(.+)$")
-
-    return text.lines().map { rawLine ->
-        val line = rawLine.trimEnd()
-        when {
-            line.isBlank() -> PreviewBlock.Empty
-            headingPattern.matches(line) -> {
-                val match = headingPattern.find(line)!!
-                val level = match.groupValues[1].length
-                val content = match.groupValues[2].trim()
-                PreviewBlock.Heading(level = level, text = content)
-            }
-
-            checklistPattern.matches(line) -> {
-                val match = checklistPattern.find(line)!!
-                val indent = match.groupValues[1].length / 2
-                val checked = match.groupValues[2].equals("x", ignoreCase = true)
-                val content = match.groupValues[3].trim()
-                PreviewBlock.Checklist(checked = checked, text = content, indentLevel = indent)
-            }
-
-            bulletPattern.matches(line) -> {
-                val match = bulletPattern.find(line)!!
-                val indent = match.groupValues[1].length / 2
-                PreviewBlock.Bullet(text = match.groupValues[2].trim(), indentLevel = indent)
-            }
-
-            else -> PreviewBlock.Paragraph(text = line)
-        }
-    }
 }
 
 private fun buildInlineStyledText(
