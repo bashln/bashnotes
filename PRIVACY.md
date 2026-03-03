@@ -1,6 +1,6 @@
 # Privacy Policy / Politica de Privacidade
 
-Last updated: 2026-03-02
+Last updated: 2026-03-03
 
 ## PT-BR
 
@@ -24,6 +24,10 @@ Para o uso normal de anotacoes:
 - nao ha envio automatico de conteudo para servidores;
 - nao ha sincronizacao embutida com nuvem;
 - nao ha upload de arquivos do usuario.
+
+Atualizacoes podem ser feitas por canais externos (GitHub Releases, Obtainium/F-Droid).
+Quando o usuario usa esses canais, a conexao de rede ocorre no app de distribuicao,
+nao dentro do OfflineNotes.
 
 ### 4) Armazenamento
 As notas sao salvas na pasta escolhida pelo proprio usuario via Android SAF.
@@ -75,6 +79,10 @@ For normal note-taking usage:
 - no automatic content upload to servers;
 - no built-in cloud sync;
 - no automatic user file transfer.
+
+Updates can be handled through external distribution channels (GitHub Releases,
+Obtainium/F-Droid). When users choose those channels, network access happens in the
+distribution app, not inside OfflineNotes.
 
 ### 4) Storage
 Notes are stored in a folder selected by the user via Android SAF.

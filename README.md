@@ -20,6 +20,7 @@ Source of truth is plain text files (`.org` and `.md`) in a user-selected folder
 - GitHub Releases: https://github.com/bashln/offline-notes/releases
 - Baixe / Download: `OfflineNotes-v<versionName>+<versionCode>-release.apk`
 - Android: permita instalacao de fontes desconhecidas / allow unknown sources when prompted
+- Auto-update opcional / Optional auto-update: Obtainium (rastreando este repo / tracking this repo)
 
 ## PT-BR
 
@@ -48,6 +49,13 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
   https://github.com/bashln/offline-notes/releases
 - Baixe o arquivo mais recente `OfflineNotes-v<versionName>+<versionCode>-release.apk`.
 - Instale no Android e permita instalacao de fontes desconhecidas quando solicitado.
+
+### Atualizacoes via Obtainium (opcional)
+- Instale o app Obtainium no seu Android.
+- Adicione este repositorio: `https://github.com/bashln/offline-notes`.
+- Configure para acompanhar Releases estaveis (sem pre-release).
+- O Obtainium baixa e avisa sobre novas versoes publicadas.
+- O OfflineNotes continua sem conexao externa para o fluxo de notas.
 
 ### Distribuicao via GitHub Releases (APK release)
 ```bash
@@ -79,6 +87,7 @@ gh release create v0.1.0 \
 - O app nao precisa de internet para funcionar.
 - O app nao envia seus dados para servidores.
 - O app nao coleta dados pessoais, nao rastreia uso e nao usa SDK de analytics.
+- Atualizacoes automaticas, quando usadas, sao feitas por app externo (Obtainium), nao pelo OfflineNotes.
 - Todo conteudo fica sob controle do usuario, na pasta selecionada via SAF.
 - Seus dados sao seus, apenas seus.
 
@@ -112,6 +121,13 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - Download the latest `OfflineNotes-v<versionName>+<versionCode>-release.apk` asset.
 - Install it on Android and allow installation from unknown sources when prompted.
 
+### Updates via Obtainium (optional)
+- Install the Obtainium app on your Android device.
+- Add this repository: `https://github.com/bashln/offline-notes`.
+- Track stable releases (pre-release disabled).
+- Obtainium will detect and notify/download new published versions.
+- OfflineNotes itself remains offline for the notes workflow.
+
 ### GitHub Releases distribution (release APK)
 ```bash
 ./gradlew :app:assembleRelease
@@ -142,6 +158,7 @@ gh release create v0.1.0 \
 - The app does not require internet access to work.
 - The app does not upload your notes to remote servers.
 - The app does not collect personal data, track usage, or include analytics SDKs.
+- Automatic updates, when used, are handled by an external app (Obtainium), not by OfflineNotes.
 - All data stays under user control in the SAF-selected folder.
 - Your data is yours, and only yours.
 
