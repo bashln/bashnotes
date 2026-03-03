@@ -37,6 +37,25 @@ Source of truth is plain text files (`.org` and `.md`) in a user-selected folder
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
+### Distribuicao via GitHub Releases (APK release)
+```bash
+./gradlew :app:assembleRelease
+ls app/build/outputs/apk/release/
+
+git tag -a v0.1.0 -m "OfflineNotes v0.1.0"
+git push origin v0.1.0
+
+gh release create v0.1.0 \
+  app/build/outputs/apk/release/OfflineNotes-v0.1.0+1-release.apk \
+  --title "OfflineNotes v0.1.0" \
+  --notes "## Highlights
+- ...
+"
+```
+
+> As credenciais de assinatura release sao lidas por variaveis de ambiente.
+> Veja `RELEASING.md`.
+
 ### Comandos de validacao
 ```bash
 ./gradlew :app:testDebugUnitTest
@@ -74,6 +93,25 @@ Politica completa: veja `PRIVACY.md`.
 ./gradlew :app:assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
+
+### GitHub Releases distribution (release APK)
+```bash
+./gradlew :app:assembleRelease
+ls app/build/outputs/apk/release/
+
+git tag -a v0.1.0 -m "OfflineNotes v0.1.0"
+git push origin v0.1.0
+
+gh release create v0.1.0 \
+  app/build/outputs/apk/release/OfflineNotes-v0.1.0+1-release.apk \
+  --title "OfflineNotes v0.1.0" \
+  --notes "## Highlights
+- ...
+"
+```
+
+> Release signing credentials are loaded from environment variables.
+> See `RELEASING.md`.
 
 ### Validation commands
 ```bash

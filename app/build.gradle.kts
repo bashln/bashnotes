@@ -4,6 +4,19 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+val appVersionCode = 1
+val appVersionName = "0.1.0"
+
+val releaseKeystorePath: String? = System.getenv("OFFLINENOTES_KEYSTORE_PATH")
+val releaseKeystorePassword: String? = System.getenv("OFFLINENOTES_KEYSTORE_PASSWORD")
+val releaseKeyAlias: String? = System.getenv("OFFLINENOTES_KEY_ALIAS")
+val releaseKeyPassword: String? = System.getenv("OFFLINENOTES_KEY_PASSWORD")
+
+val isReleaseTaskRequested: Boolean = gradle.startParameter.taskNames.any { taskName ->
+    val lower = taskName.lowercase()
+    lower.contains("release") || lower.contains("bundle")
+}
+
 android {
     namespace = "com.offlinenotes"
     compileSdk = 36
@@ -12,13 +25,25 @@ android {
         applicationId = "com.offlinenotes"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
+    }
+
+    signingConfigs {
+        create("release") {
+            if (releaseKeystorePath != null) {
+                storeFile = file(releaseKeystorePath)
+            }
+            storePassword = releaseKeystorePassword
+            keyAlias = releaseKeyAlias
+            keyPassword = releaseKeyPassword
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -38,6 +63,31 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+
+    applicationVariants.all {
+        if (buildType.name == "release") {
+            outputs.all {
+                (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+                    "OfflineNotes-v$appVersionName+$appVersionCode-release.apk"
+            }
+        }
+    }
+}
+
+if (isReleaseTaskRequested) {
+    val missing = buildList {
+        if (releaseKeystorePath.isNullOrBlank()) add("OFFLINENOTES_KEYSTORE_PATH")
+        if (releaseKeystorePassword.isNullOrBlank()) add("OFFLINENOTES_KEYSTORE_PASSWORD")
+        if (releaseKeyAlias.isNullOrBlank()) add("OFFLINENOTES_KEY_ALIAS")
+        if (releaseKeyPassword.isNullOrBlank()) add("OFFLINENOTES_KEY_PASSWORD")
+    }
+
+    if (missing.isNotEmpty()) {
+        throw GradleException(
+            "Missing release signing env vars: ${missing.joinToString()}. " +
+                "Set them before running release tasks."
+        )
     }
 }
 

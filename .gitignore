@@ -39,3 +39,7 @@ captures/
 [Cc][Ll][Aa][Uu][Dd][Ee].md
 [Cc][Oo][Dd][Ee][Xx].md
 [Gg][Ee][Mm][Ii][Nn][Ii].md
+
+# Keystores and signing material
+*.jks
+*.keystore
