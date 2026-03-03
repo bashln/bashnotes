@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -27,7 +28,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material.icons.filled.Label
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
@@ -142,7 +142,7 @@ fun NotesListScreen(
                             Icon(Icons.Default.SelectAll, contentDescription = "Selecionar tudo")
                         }
                         IconButton(onClick = { tagTarget = TagTarget.Bulk }) {
-                            Icon(Icons.Default.Label, contentDescription = "Definir tag")
+                            Icon(Icons.AutoMirrored.Filled.Label, contentDescription = "Definir tag")
                         }
                         IconButton(onClick = { showBulkDeleteConfirm = true }) {
                             Icon(
@@ -475,7 +475,7 @@ private fun NoteCard(
                         label = { Text(tag) },
                         leadingIcon = {
                             Icon(
-                                imageVector = Icons.Default.Label,
+                                imageVector = Icons.AutoMirrored.Filled.Label,
                                 contentDescription = null,
                                 modifier = Modifier.width(16.dp)
                             )
@@ -520,7 +520,7 @@ private fun NoteCard(
                     text = { Text("Definir tag") },
                     leadingIcon = {
                         Icon(
-                            imageVector = Icons.Default.Label,
+                            imageVector = Icons.AutoMirrored.Filled.Label,
                             contentDescription = null
                         )
                     },
