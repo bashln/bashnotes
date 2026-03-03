@@ -15,6 +15,12 @@
 OfflineNotes is an Android notes app built to be simple, private, and offline-first.
 Source of truth is plain text files (`.org` and `.md`) in a user-selected folder.
 
+Status: **Alpha release** (em evolucao / work in progress).
+
+PT-BR: Eu criei este projeto sinceramente para suprir uma necessidade pessoal minha: ter um app de notas simples, privado e offline de verdade. Estou compartilhando no GitHub para outras pessoas que tambem queiram um app de notas offline com 0 conexoes do app no fluxo de anotacoes.
+
+EN: I honestly built this project to solve a personal need of mine: a simple, private, truly offline notes app. I am sharing it on GitHub for others who also want an offline notes app with 0 in-app network connections during the note workflow.
+
 ## Instalacao rapida / Quick install
 
 - GitHub Releases: https://github.com/bashln/offline-notes/releases
