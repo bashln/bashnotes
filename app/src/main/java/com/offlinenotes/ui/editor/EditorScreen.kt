@@ -7,11 +7,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Save
@@ -56,6 +60,8 @@ fun EditorScreen(
     onFolderSelected: (Uri, Int) -> Unit,
     onBack: () -> Unit
 ) {
+    val maxEditorWidth = 800.dp
+    val actionSlotSize = 48.dp
     val app = LocalContext.current.applicationContext as Application
     val viewModel: EditorViewModel = viewModel(
         key = noteUri.toString(),
@@ -158,7 +164,8 @@ fun EditorScreen(
                             )
                         }
                     }
-                    if (!isPreviewMode) {
+                    Box(modifier = Modifier.size(actionSlotSize), contentAlignment = Alignment.Center) {
+                        if (!isPreviewMode) {
                         IconButton(onClick = { viewModel.save() }) {
                             Icon(
                                 imageVector = Icons.Default.Save,
@@ -166,6 +173,7 @@ fun EditorScreen(
                                 tint = androidx.compose.material3.MaterialTheme.colorScheme.primary
                             )
                         }
+                    }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -190,39 +198,47 @@ fun EditorScreen(
             return@Scaffold
         }
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(bottom = paddingValues.calculateBottomPadding())
                 .padding(scaffoldPadding)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            contentAlignment = Alignment.TopCenter
         ) {
-            if (!isPreviewMode) {
-                TextField(
-                    value = uiState.text,
-                    onValueChange = viewModel::onTextChanged,
-                    modifier = Modifier.fillMaxSize(),
-                    textStyle = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
-                    placeholder = { Text("Escreva sua nota...") },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
-                        disabledContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
-                        focusedIndicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
-                        unfocusedIndicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.outline,
-                        cursorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary
-                    ),
-                    shape = androidx.compose.material3.MaterialTheme.shapes.medium
-                )
-            } else {
-                NotePreviewContent(
-                    text = uiState.text,
-                    isOrg = currentExtension == ".org",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(4.dp)
-                )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .widthIn(max = maxEditorWidth),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (!isPreviewMode) {
+                    TextField(
+                        value = uiState.text,
+                        onValueChange = viewModel::onTextChanged,
+                        modifier = Modifier.fillMaxSize(),
+                        textStyle = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
+                        placeholder = { Text("Escreva sua nota...") },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
+                            unfocusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
+                            disabledContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
+                            focusedIndicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                            unfocusedIndicatorColor = androidx.compose.material3.MaterialTheme.colorScheme.outline,
+                            cursorColor = androidx.compose.material3.MaterialTheme.colorScheme.primary
+                        ),
+                        shape = androidx.compose.material3.MaterialTheme.shapes.medium
+                    )
+                } else {
+                    NotePreviewContent(
+                        text = uiState.text,
+                        isOrg = currentExtension == ".org",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(4.dp)
+                    )
+                }
             }
         }
     }

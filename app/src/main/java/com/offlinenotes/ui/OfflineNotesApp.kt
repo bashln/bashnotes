@@ -33,6 +33,8 @@ import androidx.navigation.navArgument
 import com.offlinenotes.domain.NoteKind
 import com.offlinenotes.ui.editor.EditorScreen
 import com.offlinenotes.ui.notes.NotesListScreen
+import com.offlinenotes.ui.privacy.PrivacyScreen
+import com.offlinenotes.ui.settings.SettingsScreen
 import com.offlinenotes.ui.sync.SyncScreen
 import com.offlinenotes.viewmodel.NotesListEvent
 import com.offlinenotes.viewmodel.NotesListViewModel
@@ -41,6 +43,8 @@ private object Routes {
     const val NOTES = "notes"
     const val SYNC = "sync"
     const val EDITOR = "editor"
+    const val SETTINGS = "settings"
+    const val PRIVACY = "privacy"
     const val EDITOR_ARG = "noteUri"
     const val EDITOR_ROUTE = "$EDITOR/{$EDITOR_ARG}"
 }
@@ -131,8 +135,27 @@ fun OfflineNotesApp() {
                     paddingValues = padding,
                     viewModel = notesViewModel,
                     onFolderSelected = notesViewModel::onFolderSelected,
+                    onOpenSettings = {
+                        navController.navigate(Routes.SETTINGS) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable(Routes.SETTINGS) {
+                SettingsScreen(
+                    paddingValues = padding,
+                    isOrgDefault = notesState.defaultQuickKind == NoteKind.ORG_NOTE,
+                    onBack = { navController.popBackStack() },
+                    onFolderSelected = notesViewModel::onFolderSelected,
+                    onToggleDefaultFormat = notesViewModel::toggleDefaultQuickFormat,
                     onOpenSyncHelp = {
                         navController.navigate(Routes.SYNC) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenPrivacy = {
+                        navController.navigate(Routes.PRIVACY) {
                             launchSingleTop = true
                         }
                     }
@@ -140,6 +163,12 @@ fun OfflineNotesApp() {
             }
             composable(Routes.SYNC) {
                 SyncScreen(paddingValues = padding)
+            }
+            composable(Routes.PRIVACY) {
+                PrivacyScreen(
+                    paddingValues = padding,
+                    onBack = { navController.popBackStack() }
+                )
             }
             composable(
                 route = Routes.EDITOR_ROUTE,
