@@ -33,6 +33,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.offlinenotes.domain.NoteKind
 import com.offlinenotes.ui.editor.EditorScreen
+import com.offlinenotes.ui.help.HelpScreen
 import com.offlinenotes.ui.notes.NotesListScreen
 import com.offlinenotes.ui.privacy.PrivacyScreen
 import com.offlinenotes.ui.settings.SettingsScreen
@@ -48,6 +49,7 @@ private object Routes {
     const val EDITOR = "editor"
     const val SETTINGS = "settings"
     const val PRIVACY = "privacy"
+    const val HELP = "help"
     const val EDITOR_ARG = "noteUri"
     const val EDITOR_ROUTE = "$EDITOR/{$EDITOR_ARG}"
 }
@@ -173,6 +175,11 @@ fun OfflineNotesApp() {
                             navController.navigate(Routes.PRIVACY) {
                                 launchSingleTop = true
                             }
+                        },
+                        onOpenHelp = {
+                            navController.navigate(Routes.HELP) {
+                                launchSingleTop = true
+                            }
                         }
                     )
                 }
@@ -181,6 +188,12 @@ fun OfflineNotesApp() {
                 }
                 composable(Routes.PRIVACY) {
                     PrivacyScreen(
+                        paddingValues = padding,
+                        onBack = { navController.popBackStack() }
+                    )
+                }
+                composable(Routes.HELP) {
+                    HelpScreen(
                         paddingValues = padding,
                         onBack = { navController.popBackStack() }
                     )

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.PrivacyTip
@@ -50,7 +51,8 @@ fun SettingsScreen(
     onThemePaletteSelected: (ThemePalette) -> Unit,
     onThemeModeSelected: (ThemeMode) -> Unit,
     onOpenSyncHelp: () -> Unit,
-    onOpenPrivacy: () -> Unit
+    onOpenPrivacy: () -> Unit,
+    onOpenHelp: () -> Unit
 ) {
     val context = LocalContext.current
     val formatLabel = if (isOrgDefault) "Org" else "Markdown"
@@ -190,6 +192,19 @@ fun SettingsScreen(
                     )
                 },
                 onClick = onOpenPrivacy
+            )
+
+            SettingsActionCard(
+                title = "Ajuda",
+                subtitle = "Veja links oficiais, autor e dados da versao instalada",
+                icon = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                        contentDescription = null,
+                        tint = androidx.compose.material3.MaterialTheme.colorScheme.primary
+                    )
+                },
+                onClick = onOpenHelp
             )
 
             Spacer(modifier = Modifier.weight(1f))

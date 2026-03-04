@@ -78,6 +78,20 @@ fun EditorScreen(
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val currentExtension = if (uiState.title.endsWith(".org")) ".org" else ".md"
     val isOrgNote = currentExtension == ".org"
+    val colorScheme = androidx.compose.material3.MaterialTheme.colorScheme
+    val syntaxHighlighting = remember(
+        isOrgNote,
+        colorScheme.primary,
+        colorScheme.onSurface,
+        colorScheme.onSurfaceVariant
+    ) {
+        SyntaxHighlightingTransformation(
+            isOrg = isOrgNote,
+            listMarkerColor = colorScheme.primary,
+            codeTextColor = colorScheme.onSurface,
+            codeDelimiterColor = colorScheme.onSurfaceVariant
+        )
+    }
     var renameValue by remember(uiState.title) {
         mutableStateOf(uiState.title.removeSuffix(".md").removeSuffix(".org"))
     }
@@ -240,6 +254,7 @@ fun EditorScreen(
                             .bringIntoViewRequester(bringIntoViewRequester),
                         textStyle = androidx.compose.material3.MaterialTheme.typography.bodyLarge,
                         placeholder = { Text("Escreva sua nota...") },
+                        visualTransformation = syntaxHighlighting,
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,
                             unfocusedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant,

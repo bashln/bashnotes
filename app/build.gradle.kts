@@ -1,3 +1,5 @@
+import java.time.LocalDate
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -6,6 +8,7 @@ plugins {
 
 val appVersionCode = 4
 val appVersionName = "0.2.2"
+val buildDate = System.getenv("OFFLINENOTES_BUILD_DATE") ?: LocalDate.now().toString()
 
 val releaseKeystorePath: String? = System.getenv("OFFLINENOTES_KEYSTORE_PATH")
 val releaseKeystorePassword: String? = System.getenv("OFFLINENOTES_KEYSTORE_PASSWORD")
@@ -27,6 +30,7 @@ android {
         targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
+        buildConfigField("String", "BUILD_DATE", "\"$buildDate\"")
     }
 
     signingConfigs {
@@ -57,6 +61,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
