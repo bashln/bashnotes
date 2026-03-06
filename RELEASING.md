@@ -53,25 +53,31 @@ app/build/outputs/apk/release/OfflineNotes-v<versionName>+<versionCode>-release.
 Example:
 
 ```text
-app/build/outputs/apk/release/OfflineNotes-v0.1.0+1-release.apk
+app/build/outputs/apk/release/OfflineNotes-v0.4.1+5-release.apk
 ```
 
 ## 4) Create and publish GitHub Release
 
 ```bash
-git tag -a v0.1.0 -m "OfflineNotes v0.1.0"
-git push origin v0.1.0
+git tag -a v0.4.1 -m "OfflineNotes v0.4.1"
+git push origin v0.4.1
 
-gh release create v0.1.0 \
-  app/build/outputs/apk/release/OfflineNotes-v0.1.0+1-release.apk \
-  --title "OfflineNotes v0.1.0" \
+gh release create v0.4.1 \
+  app/build/outputs/apk/release/OfflineNotes-v0.4.1+5-release.apk \
+  --title "OfflineNotes v0.4.1" \
   --notes "## Highlights
-- ...
+- Grouping modes: Tag, Folder, Type
+- File-type filter: All, Org, Markdown
+- Show relative path in note cards
+- Persist grouping/filter preferences
+- Move filters to drawer menu (cleaner main screen)
+- Add tag backup to file for recovery after updates
+- Auto-restore tags from backup if DataStore empty
 "
 ```
 
 ## 5) Verify install from release asset
 
 ```bash
-adb install -r OfflineNotes-v0.1.0+1-release.apk
+adb install -r OfflineNotes-v0.4.1+5-release.apk
 ```

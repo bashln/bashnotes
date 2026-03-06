@@ -6,8 +6,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -86,6 +89,23 @@ fun NotePreviewContent(
                     } else {
                         StandardBullet(block = block, isOrg = isOrg, palette = palette)
                     }
+                }
+
+                is PreviewBlock.Blockquote -> {
+                    if (isObsidianite) {
+                        ObsidianiteBlockquote(block = block, isOrg = isOrg, palette = palette)
+                    } else {
+                        StandardBlockquote(block = block, isOrg = isOrg, palette = palette)
+                    }
+                }
+
+                PreviewBlock.HorizontalRule -> {
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        color = if (isObsidianite) ObsidianiteBorder else MaterialTheme.colorScheme.outlineVariant
+                    )
                 }
 
                 is PreviewBlock.CodeBlock -> {
@@ -348,6 +368,67 @@ private fun ObsidianiteBullet(block: PreviewBlock.Bullet, isOrg: Boolean, palett
             style = MaterialTheme.typography.bodyLarge,
             color = ObsidianiteTextNormal,
             modifier = Modifier.padding(start = 8.dp)
+        )
+    }
+}
+
+@Composable
+private fun StandardBlockquote(block: PreviewBlock.Blockquote, isOrg: Boolean, palette: ThemePalette) {
+    Row(
+        modifier = Modifier
+            .padding(vertical = 4.dp)
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+    ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .fillMaxHeight()
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
+        )
+        PreviewText(
+            text = buildInlineStyledText(
+                text = block.text,
+                isOrg = isOrg,
+                palette = palette,
+                linkColor = MaterialTheme.colorScheme.primary,
+                codeBackground = MaterialTheme.colorScheme.surfaceVariant,
+                codeTextColor = MaterialTheme.colorScheme.onSurface
+            ),
+            style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 12.dp, top = 4.dp, bottom = 4.dp)
+        )
+    }
+}
+
+@Composable
+private fun ObsidianiteBlockquote(block: PreviewBlock.Blockquote, isOrg: Boolean, palette: ThemePalette) {
+    Row(
+        modifier = Modifier
+            .padding(vertical = 4.dp)
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .background(ObsidianiteSurface.copy(alpha = 0.5f))
+    ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .fillMaxHeight()
+                .background(ObsidianiteTextAccent)
+        )
+        PreviewText(
+            text = buildInlineStyledText(
+                text = block.text,
+                isOrg = isOrg,
+                palette = palette,
+                linkColor = ObsidianiteTextLink,
+                codeBackground = ObsidianiteSurface,
+                codeTextColor = ObsidianiteTextNormal
+            ),
+            style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
+            color = ObsidianiteTextDim,
+            modifier = Modifier.padding(start = 12.dp, top = 4.dp, bottom = 4.dp)
         )
     }
 }

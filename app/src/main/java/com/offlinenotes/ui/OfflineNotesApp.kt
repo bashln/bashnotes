@@ -1,8 +1,11 @@
 package com.offlinenotes.ui
 
 import android.app.Application
+import android.net.Uri
 import android.util.Base64
+import android.util.Log
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
@@ -15,9 +18,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
@@ -25,12 +30,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavOptionsBuilder
 import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import com.offlinenotes.data.SettingsRepository
 import com.offlinenotes.domain.NoteKind
 import com.offlinenotes.ui.editor.EditorScreen
 import com.offlinenotes.ui.help.HelpScreen
@@ -42,6 +46,8 @@ import com.offlinenotes.ui.theme.OfflineNotesTheme
 import com.offlinenotes.viewmodel.NotesListEvent
 import com.offlinenotes.viewmodel.NotesListViewModel
 import com.offlinenotes.viewmodel.ThemeViewModel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 private object Routes {
     const val NOTES = "notes"
@@ -56,6 +62,7 @@ private object Routes {
 
 @Composable
 fun OfflineNotesApp() {
+    val tag = "OfflineNotesApp"
     val navController = rememberNavController()
     val context = LocalContext.current
     val app = context.applicationContext as Application
@@ -67,16 +74,44 @@ fun OfflineNotesApp() {
         factory = NotesListViewModel.factory(app)
     )
     val notesState by notesViewModel.uiState.collectAsStateWithLifecycle()
+    val settingsRepository = remember { SettingsRepository(app) }
+    val scope = rememberCoroutineScope()
+    var initialNavDone by remember { mutableStateOf(false) }
     var showFabMenu by remember { mutableStateOf(false) }
+
+    fun navigateToEditor(uri: Uri, builder: NavOptionsBuilder.() -> Unit = {}) {
+        scope.launch {
+            runCatching {
+                settingsRepository.saveLastOpenedNoteUri(uri)
+            }.onFailure { error ->
+                Log.w(tag, "Failed to persist last opened note uri", error)
+            }
+        }
+        val encoded = Base64.encodeToString(
+            uri.toString().toByteArray(Charsets.UTF_8),
+            Base64.URL_SAFE or Base64.NO_WRAP
+        )
+        navController.navigate("${Routes.EDITOR}/$encoded", builder)
+    }
+
+    LaunchedEffect(Unit) {
+        if (initialNavDone) return@LaunchedEffect
+        val rootUri = settingsRepository.rootUriFlow.first()
+        if (rootUri != null) {
+            val lastOpened = settingsRepository.lastOpenedNoteUriFlow.first()
+            if (lastOpened != null) {
+                navigateToEditor(lastOpened) {
+                    popUpTo(Routes.NOTES) { inclusive = true }
+                }
+            }
+        }
+        initialNavDone = true
+    }
 
     ObserveNotesEvents(notesViewModel) { event ->
         when (event) {
             is NotesListEvent.OpenEditor -> {
-                val encoded = Base64.encodeToString(
-                    event.noteUri.toString().toByteArray(Charsets.UTF_8),
-                    Base64.URL_SAFE or Base64.NO_WRAP
-                )
-                navController.navigate("${Routes.EDITOR}/$encoded")
+                navigateToEditor(event.noteUri)
             }
 
             is NotesListEvent.ShowMessage -> Unit
@@ -212,10 +247,17 @@ fun OfflineNotesApp() {
                         paddingValues = padding,
                         noteUri = uri,
                         palette = themeState.palette,
+                        notesViewModel = notesViewModel,
                         onFolderSelected = notesViewModel::onFolderSelected,
                         onBack = {
-                            navController.popBackStack()
-                            notesViewModel.refreshNotes(forceReload = true)
+                            navController.navigate(Routes.NOTES) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        },
+                        onNavigateToNote = { nextUri ->
+                            navigateToEditor(nextUri) {
+                                popUpTo(Routes.EDITOR) { inclusive = true }
+                            }
                         }
                     )
                 }

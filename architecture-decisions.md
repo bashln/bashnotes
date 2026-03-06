@@ -25,3 +25,19 @@
 - **Contexto**: `project.md` exige uma hierarquia clara e minimalista.
 - **Decisão**: Toda a navegação principal será baseada em um hamburger menu no canto superior direito.
 - **Consequência**: UX previsível e focada.
+
+## ADR 6: Drawer Menu for Filters (v0.4.1)
+
+- **Contexto**: Controles de busca, agrupamento e filtro ocupavam espaço fixo na tela principal, poluindo a visualização.
+- **Decisão**: Mover filtros para `ModalNavigationDrawer` deslizante da direita, aberto via botão na TopBar. Gestos desabilitados (`gesturesEnabled = false`) para evitar conflito com scroll da lista.
+- **Consequência**: Interface principal mais limpa; filtros acessíveis mas não dominantes; padrão consistente com Material Design 3.
+
+## ADR 5: Conditional Preview Rendering (v0.3.0)
+
+- **Contexto**: A paleta Obsidianite requer um visual "limpo" sem cards para preview Org, diferente do estilo Material Design padrão usado pelos outros temas.
+- **Decisão**: Implementar routing condicional em `NotePreview.kt` baseado em `palette == ThemePalette.Obsidianite && isOrg`. Quando ambas condições são verdadeiras, renderiza o estilo Obsidianite; caso contrário, mantém o render padrão com cards.
+- **Consequência**:
+  - Dupla implementação de render: Standard (cards) vs Obsidianite (clean layout).
+  - Parâmetros explícitos (`palette`) passados através da cadeia de composables (`OfflineNotesApp` → `EditorScreen` → `NotePreview`).
+  - Sem regressão: Markdown e outros temas continuam funcionando com a aparência existente.
+  - Sem abstrações excessivas: Sem CompositionLocal adicional para tokens do preview.

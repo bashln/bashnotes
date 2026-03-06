@@ -2,12 +2,14 @@ package com.offlinenotes.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import android.util.Log
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.offlinenotes.data.NoteFileNaming
 import com.offlinenotes.data.NotesRepository
+import com.offlinenotes.data.SettingsRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -40,7 +42,9 @@ class EditorViewModel(
     application: Application,
     noteUri: Uri
 ) : AndroidViewModel(application) {
+    private val tag = "EditorViewModel"
     private val notesRepository = NotesRepository(application)
+    private val settingsRepository = SettingsRepository(application)
 
     private val _uiState = MutableStateFlow(
         EditorUiState(
@@ -134,6 +138,11 @@ class EditorViewModel(
             notesRepository.renameNote(_uiState.value.uri, targetName)
                 .onSuccess { renamedUri ->
                     _uiState.update { it.copy(title = targetName, uri = renamedUri) }
+                    runCatching {
+                        settingsRepository.saveLastOpenedNoteUri(renamedUri)
+                    }.onFailure { error ->
+                        Log.w(tag, "Failed to persist renamed note uri", error)
+                    }
                     _events.emit(EditorEvent.ShowMessage("Nome atualizado"))
                 }
                 .onFailure {

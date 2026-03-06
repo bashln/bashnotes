@@ -18,6 +18,8 @@ internal sealed interface PreviewBlock {
         val content: String
     ) : PreviewBlock
 
+    data class Blockquote(val text: String) : PreviewBlock
+    data object HorizontalRule : PreviewBlock
     data class Paragraph(val text: String) : PreviewBlock
     data object Empty : PreviewBlock
 }
@@ -32,6 +34,9 @@ internal fun parsePreviewBlocks(text: String, isOrg: Boolean): List<PreviewBlock
     } else {
         Regex("^(#{1,6})\\s+(.+)$")
     }
+    val blockquotePattern = Regex("^>\\s?(.*)")
+    val horizontalRulePatternMd = Regex("^\\s*[-*_]{3,}\\s*$")
+    val horizontalRulePatternOrg = Regex("^\\s*-{5,}\\s*$")
     val checklistPattern = Regex("^(\\s*)[-+*]\\s+\\[([ xX])]\\s+(.+)$")
     val bulletPattern = Regex("^(\\s*)[-+*]\\s+(.+)$")
     val orgCodeStart = Regex("^\\s*#\\+begin_src(?:\\s+(\\S+))?.*$", RegexOption.IGNORE_CASE)
@@ -90,6 +95,28 @@ internal fun parsePreviewBlocks(text: String, isOrg: Boolean): List<PreviewBlock
                 val level = match.groupValues[1].length
                 val content = match.groupValues[2].trim()
                 blocks += PreviewBlock.Heading(level = level, text = content)
+            }
+
+            (!isOrg && horizontalRulePatternMd.matches(line)) ||
+                    (isOrg && horizontalRulePatternOrg.matches(line)) -> {
+                blocks += PreviewBlock.HorizontalRule
+            }
+
+            blockquotePattern.matches(line) -> {
+                val quoteLines = mutableListOf<String>()
+                var quoteIndex = index
+                while (quoteIndex < lines.size) {
+                    val qMatch = blockquotePattern.find(lines[quoteIndex].trimEnd())
+                    if (qMatch != null) {
+                        quoteLines += qMatch.groupValues[1]
+                        quoteIndex++
+                    } else {
+                        break
+                    }
+                }
+                blocks += PreviewBlock.Blockquote(text = quoteLines.joinToString("\n"))
+                index = quoteIndex
+                continue
             }
 
             checklistPattern.matches(line) -> {

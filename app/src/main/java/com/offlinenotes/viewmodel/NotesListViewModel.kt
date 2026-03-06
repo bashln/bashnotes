@@ -103,7 +103,11 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
                     throw SecurityException("Sem permissao de escrita")
                 }
                 notesRepository.checkWritableRoot(uri).getOrThrow()
+                val previousRoot = _uiState.value.rootUri
                 settingsRepository.saveRootUri(uri)
+                if (previousRoot != uri) {
+                    settingsRepository.clearLastOpenedNoteUri()
+                }
                 allNotesCache = emptyList()
                 _uiState.update { it.copy(rootUri = uri) }
                 refreshNotes(forceReload = true)
@@ -447,6 +451,7 @@ class NotesListViewModel(application: Application) : AndroidViewModel(applicatio
         allNotesCache = emptyList()
         restoredTagsForRootUri = null
         settingsRepository.clearRootUri()
+        settingsRepository.clearLastOpenedNoteUri()
         _uiState.update { it.copy(rootUri = null, isLoading = false, notes = emptyList(), query = "") }
     }
 
