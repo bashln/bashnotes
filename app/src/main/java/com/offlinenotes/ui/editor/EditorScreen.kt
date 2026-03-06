@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.offlinenotes.ui.theme.ThemePalette
 import com.offlinenotes.viewmodel.EditorEvent
 import com.offlinenotes.viewmodel.EditorViewModel
 
@@ -60,6 +61,7 @@ import com.offlinenotes.viewmodel.EditorViewModel
 fun EditorScreen(
     paddingValues: PaddingValues,
     noteUri: Uri,
+    palette: ThemePalette,
     onFolderSelected: (Uri, Int) -> Unit,
     onBack: () -> Unit
 ) {
@@ -269,6 +271,7 @@ fun EditorScreen(
                     NotePreviewContent(
                         text = uiState.editorValue.text,
                         isOrg = isOrgNote,
+                        palette = palette,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(4.dp)

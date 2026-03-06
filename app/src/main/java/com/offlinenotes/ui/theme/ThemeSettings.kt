@@ -6,7 +6,8 @@ enum class ThemePalette(
 ) {
     TokyoNight("tokyo_night", "Tokyo Night"),
     Catppuccin("catppuccin", "Catppuccin"),
-    RosePine("rose_pine", "Rose Pine");
+    RosePine("rose_pine", "Rose Pine"),
+    Obsidianite("obsidianite", "Obsidianite");
 
     companion object {
         fun fromStorageValue(value: String?): ThemePalette {

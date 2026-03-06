@@ -211,6 +211,7 @@ fun OfflineNotesApp() {
                     EditorScreen(
                         paddingValues = padding,
                         noteUri = uri,
+                        palette = themeState.palette,
                         onFolderSelected = notesViewModel::onFolderSelected,
                         onBack = {
                             navController.popBackStack()

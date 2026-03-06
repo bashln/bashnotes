@@ -16,6 +16,27 @@ val TokyoSecondaryText = Color(0xFFA9B1D6)
 val TokyoMuted = Color(0xFF565F89)
 val TokyoError = Color(0xFFF7768E)
 
+// Obsidianite Colors
+val ObsidianiteBackground = Color(0xFF100E17)
+val ObsidianiteBackgroundAlt = Color(0xFF0D0B12)
+val ObsidianiteSurface = Color(0xFF191621)
+val ObsidianiteSurfaceAlt = Color(0xFF0D0B12)
+val ObsidianitePrimary = Color(0xFF0FB6D6)
+val ObsidianiteOnPrimary = Color(0xFF100E17)
+val ObsidianiteTextNormal = Color(0xFFBEBEBE)
+val ObsidianiteTextFaint = Color(0xFF7AA2F7)
+val ObsidianiteTextAccent = Color(0xFF0FB6D6)
+val ObsidianiteTextSubAccent = Color(0xFFF4569D)
+val ObsidianiteTextDim = Color(0xFF45AAFF)
+val ObsidianiteTextLink = Color(0xFF6BCAFB)
+val ObsidianiteTextMark = Color(0xFF263D92)
+val ObsidianiteInteractiveAccent = Color(0x800ED2F7)
+val ObsidianiteBorder = Color(0x0D0ED2F7)
+val ObsidianiteBlockquoteBorder = Color(0xFF4AA8FB)
+val ObsidianiteTableBorder = Color(0x260ED2F7)
+val ObsidianiteOutline = Color(0xFF6E7681)
+val ObsidianiteError = Color(0xFFF4569D)
+
 private data class PaletteTokens(
     val primary: Color,
     val onPrimary: Color,
@@ -107,6 +128,21 @@ private val rosePineLight = PaletteTokens(
     error = Color(0xFFB4637A)
 )
 
+private val obsidianiteDark = PaletteTokens(
+    primary = ObsidianitePrimary,
+    onPrimary = ObsidianiteOnPrimary,
+    background = ObsidianiteBackground,
+    onBackground = ObsidianiteTextNormal,
+    surface = ObsidianiteSurface,
+    onSurface = ObsidianiteTextNormal,
+    surfaceVariant = ObsidianiteSurfaceAlt,
+    onSurfaceVariant = ObsidianiteTextFaint,
+    outline = ObsidianiteOutline,
+    error = ObsidianiteError
+)
+
+private val obsidianiteLight = obsidianiteDark
+
 fun offlineColorScheme(
     palette: ThemePalette,
     darkTheme: Boolean
@@ -115,6 +151,7 @@ fun offlineColorScheme(
         ThemePalette.TokyoNight -> if (darkTheme) tokyoNightDark else tokyoNightLight
         ThemePalette.Catppuccin -> if (darkTheme) catppuccinDark else catppuccinLight
         ThemePalette.RosePine -> if (darkTheme) rosePineDark else rosePineLight
+        ThemePalette.Obsidianite -> if (darkTheme) obsidianiteDark else obsidianiteLight
     }
 
     return if (darkTheme) {

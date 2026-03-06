@@ -1,9 +1,16 @@
 package com.offlinenotes.ui.editor
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -29,14 +36,28 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.offlinenotes.ui.theme.ObsidianiteBackground
+import com.offlinenotes.ui.theme.ObsidianiteBorder
+import com.offlinenotes.ui.theme.ObsidianiteInteractiveAccent
+import com.offlinenotes.ui.theme.ObsidianiteSurface
+import com.offlinenotes.ui.theme.ObsidianiteTextAccent
+import com.offlinenotes.ui.theme.ObsidianiteTextDim
+import com.offlinenotes.ui.theme.ObsidianiteTextFaint
+import com.offlinenotes.ui.theme.ObsidianiteTextLink
+import com.offlinenotes.ui.theme.ObsidianiteTextNormal
+import com.offlinenotes.ui.theme.ObsidianiteTextSubAccent
+import com.offlinenotes.ui.theme.ThemePalette
 
 @Composable
 fun NotePreviewContent(
     text: String,
     isOrg: Boolean,
+    palette: ThemePalette = ThemePalette.TokyoNight,
     modifier: Modifier = Modifier
 ) {
     val blocks = parsePreviewBlocks(text, isOrg)
+    val isObsidianite = palette == ThemePalette.Obsidianite && isOrg
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 4.dp)
@@ -44,155 +65,43 @@ fun NotePreviewContent(
         itemsIndexed(blocks) { _, block ->
             when (block) {
                 is PreviewBlock.Heading -> {
-                    val headingStyle = when (block.level) {
-                        1 -> MaterialTheme.typography.titleLarge
-                        2 -> MaterialTheme.typography.titleMedium
-                        else -> MaterialTheme.typography.titleSmall
+                    if (isObsidianite) {
+                        ObsidianiteHeading(text = block.text, level = block.level, isOrg = isOrg, palette = palette)
+                    } else {
+                        StandardHeading(text = block.text, level = block.level, isOrg = isOrg, palette = palette)
                     }
-                    PreviewText(
-                        text = buildInlineStyledText(
-                            text = block.text,
-                            isOrg = isOrg,
-                            linkColor = MaterialTheme.colorScheme.primary,
-                            codeBackground = MaterialTheme.colorScheme.surfaceVariant,
-                            codeTextColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        style = headingStyle,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 10.dp, bottom = 6.dp)
-                    )
                 }
 
                 is PreviewBlock.Checklist -> {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
-                        ),
-                        modifier = Modifier.padding(
-                            start = (block.indentLevel * 12).dp,
-                            top = 2.dp,
-                            bottom = 2.dp
-                        )
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            verticalAlignment = Alignment.Top,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (block.checked) {
-                                    Icons.Default.CheckBox
-                                } else {
-                                    Icons.Default.CheckBoxOutlineBlank
-                                },
-                                contentDescription = null,
-                                tint = if (block.checked) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                                modifier = Modifier.padding(top = 1.dp)
-                            )
-                            PreviewText(
-                                text = buildInlineStyledText(
-                                    text = block.text,
-                                    isOrg = isOrg,
-                                    linkColor = MaterialTheme.colorScheme.primary,
-                                    codeBackground = MaterialTheme.colorScheme.surfaceVariant,
-                                    codeTextColor = MaterialTheme.colorScheme.onSurface
-                                ),
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    textDecoration = if (block.checked) {
-                                        TextDecoration.LineThrough
-                                    } else {
-                                        TextDecoration.None
-                                    }
-                                ),
-                                color = if (block.checked) {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                },
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
+                    if (isObsidianite) {
+                        ObsidianiteChecklist(block = block, isOrg = isOrg, palette = palette)
+                    } else {
+                        StandardChecklist(block = block, isOrg = isOrg, palette = palette)
                     }
                 }
 
                 is PreviewBlock.Bullet -> {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-                        ),
-                        modifier = Modifier.padding(
-                            start = (block.indentLevel * 12).dp,
-                            top = 2.dp,
-                            bottom = 2.dp
-                        )
-                    ) {
-                        androidx.compose.foundation.layout.Row(
-                            verticalAlignment = Alignment.Top,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
-                        ) {
-                            Text(
-                                text = "•",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            PreviewText(
-                                text = buildInlineStyledText(
-                                    text = block.text,
-                                    isOrg = isOrg,
-                                    linkColor = MaterialTheme.colorScheme.primary,
-                                    codeBackground = MaterialTheme.colorScheme.surfaceVariant,
-                                    codeTextColor = MaterialTheme.colorScheme.onSurface
-                                ),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                        }
+                    if (isObsidianite) {
+                        ObsidianiteBullet(block = block, isOrg = isOrg, palette = palette)
+                    } else {
+                        StandardBullet(block = block, isOrg = isOrg, palette = palette)
                     }
                 }
 
                 is PreviewBlock.CodeBlock -> {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-                        ),
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    ) {
-                        if (!block.languageHint.isNullOrBlank()) {
-                            Text(
-                                text = block.languageHint,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(start = 10.dp, top = 8.dp, end = 10.dp)
-                            )
-                        }
-                        Text(
-                            text = block.content.ifBlank { " " },
-                            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
-                        )
+                    if (isObsidianite) {
+                        ObsidianiteCodeBlock(block = block)
+                    } else {
+                        StandardCodeBlock(block = block)
                     }
                 }
 
                 is PreviewBlock.Paragraph -> {
-                    PreviewText(
-                        text = buildInlineStyledText(
-                            text = block.text,
-                            isOrg = isOrg,
-                            linkColor = MaterialTheme.colorScheme.primary,
-                            codeBackground = MaterialTheme.colorScheme.surfaceVariant,
-                            codeTextColor = MaterialTheme.colorScheme.onSurface
-                        ),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(vertical = 2.dp)
-                    )
+                    if (isObsidianite) {
+                        ObsidianiteParagraph(text = block.text, isOrg = isOrg, palette = palette)
+                    } else {
+                        StandardParagraph(text = block.text, isOrg = isOrg, palette = palette)
+                    }
                 }
 
                 PreviewBlock.Empty -> {
@@ -201,6 +110,333 @@ fun NotePreviewContent(
             }
         }
     }
+}
+
+@Composable
+private fun StandardHeading(text: String, level: Int, isOrg: Boolean, palette: ThemePalette) {
+    val headingStyle = when (level) {
+        1 -> MaterialTheme.typography.titleLarge
+        2 -> MaterialTheme.typography.titleMedium
+        else -> MaterialTheme.typography.titleSmall
+    }
+    PreviewText(
+        text = buildInlineStyledText(
+            text = text,
+            isOrg = isOrg,
+            palette = palette,
+            linkColor = MaterialTheme.colorScheme.primary,
+            codeBackground = MaterialTheme.colorScheme.surfaceVariant,
+            codeTextColor = MaterialTheme.colorScheme.onSurface
+        ),
+        style = headingStyle,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 10.dp, bottom = 6.dp)
+    )
+}
+
+@Composable
+private fun ObsidianiteHeading(text: String, level: Int, isOrg: Boolean, palette: ThemePalette) {
+    val headingStyle = when (level) {
+        1 -> MaterialTheme.typography.titleLarge
+        2 -> MaterialTheme.typography.titleMedium
+        else -> MaterialTheme.typography.titleSmall
+    }
+    val headingColor = when (level) {
+        1 -> ObsidianiteTextAccent
+        else -> ObsidianiteTextFaint
+    }
+
+    if (level == 1) {
+        Row(
+            modifier = Modifier
+                .padding(top = 10.dp, bottom = 6.dp)
+                .height(30.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(3.dp)
+                    .background(ObsidianiteTextAccent)
+            )
+            PreviewText(
+                text = buildInlineStyledText(
+                    text = text,
+                    isOrg = isOrg,
+                    palette = palette,
+                    linkColor = ObsidianiteTextLink,
+                    codeBackground = ObsidianiteSurface,
+                    codeTextColor = ObsidianiteTextNormal
+                ),
+                style = headingStyle,
+                color = headingColor,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+    } else {
+        PreviewText(
+            text = buildInlineStyledText(
+                text = text,
+                isOrg = isOrg,
+                palette = palette,
+                linkColor = ObsidianiteTextLink,
+                codeBackground = ObsidianiteSurface,
+                codeTextColor = ObsidianiteTextNormal
+            ),
+            style = headingStyle,
+            color = headingColor,
+            modifier = Modifier.padding(top = 10.dp, bottom = 6.dp)
+        )
+    }
+}
+
+@Composable
+private fun StandardChecklist(block: PreviewBlock.Checklist, isOrg: Boolean, palette: ThemePalette) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)
+        ),
+        modifier = Modifier.padding(
+            start = (block.indentLevel * 12).dp,
+            top = 2.dp,
+            bottom = 2.dp
+        )
+    ) {
+        Row(
+            verticalAlignment = Alignment.Top,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+        ) {
+            Icon(
+                imageVector = if (block.checked) {
+                    Icons.Default.CheckBox
+                } else {
+                    Icons.Default.CheckBoxOutlineBlank
+                },
+                contentDescription = null,
+                tint = if (block.checked) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.padding(top = 1.dp)
+            )
+            PreviewText(
+                text = buildInlineStyledText(
+                    text = block.text,
+                    isOrg = isOrg,
+                    palette = palette,
+                    linkColor = MaterialTheme.colorScheme.primary,
+                    codeBackground = MaterialTheme.colorScheme.surfaceVariant,
+                    codeTextColor = MaterialTheme.colorScheme.onSurface
+                ),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    textDecoration = if (block.checked) {
+                        TextDecoration.LineThrough
+                    } else {
+                        TextDecoration.None
+                    }
+                ),
+                color = if (block.checked) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ObsidianiteChecklist(block: PreviewBlock.Checklist, isOrg: Boolean, palette: ThemePalette) {
+    Row(
+        verticalAlignment = Alignment.Top,
+        modifier = Modifier
+            .padding(start = (block.indentLevel * 12).dp, top = 4.dp, bottom = 4.dp)
+            .background(ObsidianiteBackground)
+            .padding(horizontal = 4.dp, vertical = 4.dp)
+    ) {
+        Icon(
+            imageVector = if (block.checked) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+            contentDescription = null,
+            tint = if (block.checked) ObsidianiteTextAccent else ObsidianiteInteractiveAccent,
+            modifier = Modifier
+                .padding(top = 1.dp)
+                .border(
+                    border = BorderStroke(
+                        width = if (block.checked) 0.dp else 1.dp,
+                        color = ObsidianiteBorder.copy(alpha = 0.7f)
+                    )
+                )
+        )
+        PreviewText(
+            text = buildInlineStyledText(
+                text = block.text,
+                isOrg = isOrg,
+                palette = palette,
+                linkColor = ObsidianiteTextLink,
+                codeBackground = ObsidianiteSurface,
+                codeTextColor = ObsidianiteTextNormal
+            ),
+            style = MaterialTheme.typography.bodyLarge.copy(
+                textDecoration = if (block.checked) TextDecoration.LineThrough else TextDecoration.None
+            ),
+            color = if (block.checked) ObsidianiteTextFaint else ObsidianiteTextNormal,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+    }
+}
+
+@Composable
+private fun StandardBullet(block: PreviewBlock.Bullet, isOrg: Boolean, palette: ThemePalette) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+        ),
+        modifier = Modifier.padding(
+            start = (block.indentLevel * 12).dp,
+            top = 2.dp,
+            bottom = 2.dp
+        )
+    ) {
+        Row(
+            verticalAlignment = Alignment.Top,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = "•",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+            PreviewText(
+                text = buildInlineStyledText(
+                    text = block.text,
+                    isOrg = isOrg,
+                    palette = palette,
+                    linkColor = MaterialTheme.colorScheme.primary,
+                    codeBackground = MaterialTheme.colorScheme.surfaceVariant,
+                    codeTextColor = MaterialTheme.colorScheme.onSurface
+                ),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ObsidianiteBullet(block: PreviewBlock.Bullet, isOrg: Boolean, palette: ThemePalette) {
+    Row(
+        verticalAlignment = Alignment.Top,
+        modifier = Modifier.padding(start = (block.indentLevel * 12).dp, top = 4.dp, bottom = 4.dp)
+    ) {
+        Text(
+            text = "•",
+            style = MaterialTheme.typography.bodyLarge,
+            color = ObsidianiteTextDim
+        )
+        PreviewText(
+            text = buildInlineStyledText(
+                text = block.text,
+                isOrg = isOrg,
+                palette = palette,
+                linkColor = ObsidianiteTextLink,
+                codeBackground = ObsidianiteSurface,
+                codeTextColor = ObsidianiteTextNormal
+            ),
+            style = MaterialTheme.typography.bodyLarge,
+            color = ObsidianiteTextNormal,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+    }
+}
+
+@Composable
+private fun StandardCodeBlock(block: PreviewBlock.CodeBlock) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+        ),
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
+        if (!block.languageHint.isNullOrBlank()) {
+            Text(
+                text = block.languageHint,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 10.dp, top = 8.dp, end = 10.dp)
+            )
+        }
+        Text(
+            text = block.content.ifBlank { " " },
+            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+        )
+    }
+}
+
+@Composable
+private fun ObsidianiteCodeBlock(block: PreviewBlock.CodeBlock) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = ObsidianiteSurface),
+        border = BorderStroke(width = 1.dp, color = ObsidianiteBorder),
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
+        if (!block.languageHint.isNullOrBlank()) {
+            Text(
+                text = block.languageHint,
+                style = MaterialTheme.typography.labelSmall,
+                color = ObsidianiteTextSubAccent,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(start = 10.dp, top = 8.dp, end = 10.dp)
+            )
+        }
+        Text(
+            text = block.content.ifBlank { " " },
+            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+            color = ObsidianiteTextNormal,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+        )
+    }
+}
+
+@Composable
+private fun StandardParagraph(text: String, isOrg: Boolean, palette: ThemePalette) {
+    PreviewText(
+        text = buildInlineStyledText(
+            text = text,
+            isOrg = isOrg,
+            palette = palette,
+            linkColor = MaterialTheme.colorScheme.primary,
+            codeBackground = MaterialTheme.colorScheme.surfaceVariant,
+            codeTextColor = MaterialTheme.colorScheme.onSurface
+        ),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurface,
+        modifier = Modifier.padding(vertical = 2.dp)
+    )
+}
+
+@Composable
+private fun ObsidianiteParagraph(text: String, isOrg: Boolean, palette: ThemePalette) {
+    PreviewText(
+        text = buildInlineStyledText(
+            text = text,
+            isOrg = isOrg,
+            palette = palette,
+            linkColor = ObsidianiteTextLink,
+            codeBackground = ObsidianiteSurface,
+            codeTextColor = ObsidianiteTextNormal
+        ),
+        style = MaterialTheme.typography.bodyLarge,
+        color = ObsidianiteTextNormal,
+        modifier = Modifier.padding(vertical = 2.dp)
+    )
 }
 
 @Composable
@@ -221,17 +457,28 @@ private fun PreviewText(
 private fun buildInlineStyledText(
     text: String,
     isOrg: Boolean,
+    palette: ThemePalette,
     linkColor: Color,
     codeBackground: Color,
     codeTextColor: Color
 ): AnnotatedString {
+    val useObsidianitePalette = palette == ThemePalette.Obsidianite && isOrg
+    val resolvedLinkColor = if (useObsidianitePalette) ObsidianiteTextLink else linkColor
+    val resolvedCodeBackground = if (useObsidianitePalette) ObsidianiteSurface else codeBackground
+    val resolvedCodeTextColor = if (useObsidianitePalette) ObsidianiteTextNormal else codeTextColor
     val builder = AnnotatedString.Builder()
     var index = 0
 
     while (index < text.length) {
         val nextLink = findNextLinkToken(text, index, isOrg)
         if (nextLink == null) {
-            appendStyledSegment(builder, text.substring(index), isOrg, codeBackground, codeTextColor)
+            appendStyledSegment(
+                builder,
+                text.substring(index),
+                isOrg,
+                resolvedCodeBackground,
+                resolvedCodeTextColor
+            )
             break
         }
 
@@ -240,8 +487,8 @@ private fun buildInlineStyledText(
                 builder,
                 text.substring(index, nextLink.start),
                 isOrg,
-                codeBackground,
-                codeTextColor
+                resolvedCodeBackground,
+                resolvedCodeTextColor
             )
         }
 
@@ -250,7 +497,7 @@ private fun buildInlineStyledText(
                 nextLink.url,
                 styles = TextLinkStyles(
                     style = SpanStyle(
-                        color = linkColor,
+                        color = resolvedLinkColor,
                         textDecoration = TextDecoration.Underline
                     )
                 )
